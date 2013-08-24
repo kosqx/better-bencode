@@ -139,7 +139,7 @@ static char benc_read_char(struct benc_read *br) {
 
 
 static PyObject *do_load(struct benc_read *br) {
-	PyObject *retval;
+	PyObject *retval = NULL;
 
 	char first = benc_read_char(br);
 
@@ -193,6 +193,35 @@ static PyObject *do_load(struct benc_read *br) {
 			}
 			retval = PyString_FromStringAndSize(br->buffer + br->offset, size);
 
+			} break;
+		case 'e':
+			Py_INCREF(PyExc_StopIteration);
+        	retval = PyExc_StopIteration;
+			break;
+		case 'l': {
+			PyObject *v = PyList_New(0);
+			PyObject *item;
+
+			while (1) {
+				item = do_load(br);
+				if (item == PyExc_StopIteration) {
+					Py_DECREF(PyExc_StopIteration);
+					break;
+				}
+
+
+				// if ( v2 == NULL ) {
+				// 	if (!PyErr_Occurred())
+				// 		PyErr_SetString(PyExc_TypeError,
+				// 			"NULL object in marshal data for list");
+				// 	Py_DECREF(v);
+				// 	v = NULL;
+				// 	break;
+				// }
+				PyList_Append(v, item);
+			}
+
+			retval = v;
 			} break;
 
 		default:

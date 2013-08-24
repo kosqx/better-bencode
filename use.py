@@ -71,5 +71,10 @@ print cBencode.loads('n')
 print cBencode.loads('f')
 print cBencode.loads('t')
 print cBencode.loads('i123e')
+print repr(cBencode.loads('0:'))
 print repr(cBencode.loads('3:foo'))
+
+
+print repr(cBencode.loads('le'))
+print repr(cBencode.loads('lnfti1ei2ei3ee'))
 
