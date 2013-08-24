@@ -7,33 +7,33 @@ struct benc_state {
 	PyObject* fout;
 };
 
-static int benc_state_flush(struct benc_state* bs) {
+static void benc_state_flush(struct benc_state* bs) {
 	if (bs->offset > 0) {
 		PyObject_CallMethod(bs->fout, "write", "s#", bs->buffer, bs->offset);
 		bs->offset = 0;
 	}
 }
 
-static int benc_state_try_flush(struct benc_state* bs) {
+static void benc_state_try_flush(struct benc_state* bs) {
 	if (bs->offset >= bs->size) {
 		PyObject_CallMethod(bs->fout, "write", "s#", bs->buffer, bs->offset);
 		bs->offset = 0;
 	}
 }
 
-static int benc_state_write_char(struct benc_state* bs, char c) {
+static void benc_state_write_char(struct benc_state* bs, char c) {
 	bs->buffer[bs->offset++] = c;
 	benc_state_try_flush(bs);
 }
 
-static int benc_state_write_string(struct benc_state* bs, char* str) {
+static void benc_state_write_string(struct benc_state* bs, char* str) {
 	while (*str) {
 		bs->buffer[bs->offset++] = *str++;
 		benc_state_try_flush(bs);
 	}
 }
 
-static int benc_state_write_buffer(struct benc_state* bs, char* buff, int size) {
+static void benc_state_write_buffer(struct benc_state* bs, char* buff, int size) {
 	int i;
 	for (i = 0; i < size; i++) {
 		bs->buffer[bs->offset++] = buff[i];
@@ -41,7 +41,7 @@ static int benc_state_write_buffer(struct benc_state* bs, char* buff, int size) 
 	}
 }
 
-int benc_state_write_format(struct benc_state* bs, const int limit, const void *format, ...) {
+static void benc_state_write_format(struct benc_state* bs, const int limit, const void *format, ...) {
 	char buffer[limit + 1]; // moze by malloca()?
 
 	va_list ap;
@@ -101,6 +101,7 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
 	} else {
 		printf("WTF??\n");
 	}
+	return 0;
 }
 
 static PyObject* dump(PyObject* self, PyObject* args) {
