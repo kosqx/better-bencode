@@ -1,16 +1,4 @@
 #include <Python.h>
- 
-// static PyObject* say_hello(PyObject* self, PyObject* args)
-// {
-//     const char* name;
- 
-//     if (!PyArg_ParseTuple(args, "s", &name))
-//         return NULL;
- 
-//     printf("Hello %s!\n", name);
- 
-//     Py_RETURN_NONE;
-// }
 
 struct benc_state {
 	int size;
@@ -81,12 +69,6 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
 
 		benc_state_write_format(bs, 12, "%d:", size);
 		benc_state_write_buffer(bs, buff, size);
-	// }  else if () {
-	// 	printf("INT\n");
-	// 	// PyObject *encoded = PyObject_Str(obj);
-	// 	// if (encoded == NULL)
-	// 	// 	return -1;
-	// 	// return _steal_list_append(rval, encoded);
 	} else if (PyInt_Check(obj) || PyLong_Check(obj)) {
 		// long x = PyLong_AsLong(obj);
 		// benc_state_write_format(bs, 20, "i%lde", x);
@@ -96,28 +78,12 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
 		benc_state_write_char(bs, 'i');
 		benc_state_write_buffer(bs, buff, size);
 		benc_state_write_char(bs, 'e');
-
-
-
-	// } else if (PyInt_Check(obj) || PyLong_Check(obj)) {
-	// 	long x = PyLong_AsLong(obj);
-	// 	benc_state_write_format(bs, 20, "i%lde", x);
-	// } else if (PyLong_CheckExact(obj)) {
-	// 	long x = PyLong_AsLong(obj);
-	// 	benc_state_write_format(bs, 20, "i%lde", x);
 	} else if (PyFloat_Check(obj)) {
 		double real_val = PyFloat_AS_DOUBLE(obj);
-		
 		printf("REAL (%G)\n", real_val);
-		
-		// PyObject *encoded = encoder_encode_float(s, obj);
-		// if (encoded == NULL)
-		// 	return -1;
-		// return _steal_list_append(rval, encoded);
-
 	} else if (PyList_CheckExact(obj)) {
-		benc_state_write_char(bs, 'l');
 		n = PyList_GET_SIZE(obj);
+		benc_state_write_char(bs, 'l');
 		for (i = 0; i < n; i++) {
 			do_dump(bs, PyList_GET_ITEM(obj, i));
 		}
@@ -136,16 +102,14 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
 		printf("WTF??\n");
 	}
 }
- 
-static PyObject* dump(PyObject* self, PyObject* args)
-{
+
+static PyObject* dump(PyObject* self, PyObject* args) {
 	PyObject* obj;
 	PyObject* write;
 	struct benc_state bs;
 	bs.size = 1000;
 	bs.offset = 0;
-	
- 
+
 	if (!PyArg_ParseTuple(args, "OO", &obj, &write))
 		return NULL;
 
@@ -154,20 +118,17 @@ static PyObject* dump(PyObject* self, PyObject* args)
 	do_dump(&bs, obj);
 
 	benc_state_flush(&bs);
- 
+
 	return Py_BuildValue("s#", bs.buffer, bs.offset);
 }
- 
-static PyMethodDef cBencodeMethods[] =
-{
-	 // {"say_hello", say_hello, METH_VARARGS, "Greet somebody."},
-	 {"dump", dump, METH_VARARGS, "Greet somebody."},
-	 {NULL, NULL, 0, NULL}
+
+static PyMethodDef cBencodeMethods[] = {
+	{"dump", dump, METH_VARARGS, "Write the value on the open file."},
+	{NULL, NULL, 0, NULL}
 };
- 
+
 PyMODINIT_FUNC
- 
-initcBencode(void)
-{
-	 (void) Py_InitModule("cBencode", cBencodeMethods);
+
+initcBencode(void) {
+	(void) Py_InitModule("cBencode", cBencodeMethods);
 }
