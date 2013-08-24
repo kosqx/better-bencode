@@ -5,4 +5,5 @@ all:
 	# python -c 'import cBencode; print "%r" % cBencode.dump([None, True, False, "foo"])'
 	# python -c 'import cBencode; print "%r" % cBencode.dump({"a": False, "b": True})'
 	# python -c 'import cBencode; print "%r" % cBencode.dump({"a": 1, "b": 123456789123456789123456789})'
-	python -c 'import cBencode, sys; cBencode.dump({"a": 1, "b": 123456789123456789123456789}, sys.stdout)'
+	# python -c 'import cBencode, sys; cBencode.dump({"a": 1, "b": 123456789123456789123456789}, sys.stdout); print'
+	python use.py
