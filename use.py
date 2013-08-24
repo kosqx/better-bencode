@@ -70,3 +70,6 @@ print '-' * 100
 print cBencode.loads('n')
 print cBencode.loads('f')
 print cBencode.loads('t')
+print cBencode.loads('i123e')
+print repr(cBencode.loads('3:foo'))
+

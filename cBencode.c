@@ -156,6 +156,45 @@ static PyObject *do_load(struct benc_read *br) {
 			Py_INCREF(Py_True);
 			retval = Py_True;
 			break;
+		case 'i': {
+			int sign = 1;
+			long long value = 0;
+			char current = benc_read_char(br);
+			if (current == '-') {
+				sign = -1;
+				current = benc_read_char(br);
+			}
+			// TODO: sprawdzanie przedzialow
+			while (('0' <= current) && (current <= '9')) {
+				value = value * 10 + (current - '0');
+				current = benc_read_char(br);
+			}
+			value *= sign;
+			retval = PyLong_FromLongLong(value);
+
+			} break;
+
+		case '0':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9': {
+			int size = first - '0';
+			char current = benc_read_char(br);
+			// TODO: sprawdzanie przedzialow
+			while (('0' <= current) && (current <= '9')) {
+				size = size * 10 + (current - '0');
+				current = benc_read_char(br);
+			}
+			retval = PyString_FromStringAndSize(br->buffer + br->offset, size);
+
+			} break;
+
 		default:
 			/* Bogus data got written, which isn't ideal.
 			   This will let you keep working and recover. */
