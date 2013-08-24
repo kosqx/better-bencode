@@ -123,7 +123,66 @@ static PyObject* dump(PyObject* self, PyObject* args) {
 	return Py_BuildValue("s#", bs.buffer, bs.offset);
 }
 
+
+struct benc_read {
+	int size;
+	int offset;
+	char *buffer;
+	// PyObject* fin;
+};
+
+static char benc_read_char(struct benc_read *br) {
+	if (br->buffer != NULL) {
+		return br->buffer[br->offset++];
+	}
+}
+
+
+static PyObject *do_load(struct benc_read *br) {
+	PyObject *retval;
+
+	char first = benc_read_char(br);
+
+	switch (first) {
+		case 'n':
+			Py_INCREF(Py_None);
+			retval = Py_None;
+			break;
+		case 'f':
+			Py_INCREF(Py_False);
+			retval = Py_False;
+			break;
+		case 't':
+			Py_INCREF(Py_True);
+			retval = Py_True;
+			break;
+		default:
+			/* Bogus data got written, which isn't ideal.
+			   This will let you keep working and recover. */
+			// PyErr_SetString(PyExc_ValueError, "bad input data");
+			retval = NULL;
+			break;
+	}
+	return retval;
+}
+
+
+static PyObject* loads(PyObject* self, PyObject* args) {
+	struct benc_read br;
+	br.offset = 0;
+
+	if (!PyArg_ParseTuple(args, "s#", &(br.buffer), &(br.size)))
+		return NULL;
+
+	PyObject* obj = do_load(&br);
+
+	return obj;
+	//return Py_BuildValue("s#", bs.buffer, bs.offset);
+}
+
+
 static PyMethodDef cBencodeMethods[] = {
+	{"loads", loads, METH_VARARGS, "loads"},
 	{"dump", dump, METH_VARARGS, "Write the value on the open file."},
 	{NULL, NULL, 0, NULL}
 };

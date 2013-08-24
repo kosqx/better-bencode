@@ -60,7 +60,13 @@ g = globals()
 for name, code in g.items():
 	if name.startswith('test_'):
 		start = time.time()
-		code(100000)
+		code(1000)
 		stop  = time.time()
 
 		print '%15s  %5.3f' % (name, (stop - start) * 1000)
+
+print '-' * 100
+
+print cBencode.loads('n')
+print cBencode.loads('f')
+print cBencode.loads('t')
