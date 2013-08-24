@@ -142,7 +142,7 @@ static PyObject* dump(PyObject* self, PyObject* args)
 	PyObject* obj;
 	PyObject* write;
 	struct benc_state bs;
-	bs.size = 10;
+	bs.size = 1000;
 	bs.offset = 0;
 	
  
