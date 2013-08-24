@@ -26,12 +26,13 @@ cBencode.dump(EXAMPLES[0], fp)
 print len(fp.getvalue())
 
 
+
 def test_bencode(N):
 	for i in xrange(N):
 		for ex in EXAMPLES:
 			fp = StringIO()
 			cBencode.dump(ex, fp)
-			fp.getvalue()
+			data = fp.getvalue()
 
 
 def _test_json(N):
@@ -39,7 +40,7 @@ def _test_json(N):
 		for ex in EXAMPLES:
 			fp = StringIO()
 			json.dump(ex, fp)
-			fp.getvalue()
+			data = fp.getvalue()
 
 # def test_marshal(N):
 # 	for i in xrange(N):
@@ -53,7 +54,7 @@ def test_repr(N):
 		for ex in EXAMPLES:
 			fp = StringIO()
 			fp.write(repr(ex))
-			fp.getvalue()
+			data = fp.getvalue()
 
 
 g = globals()
@@ -73,8 +74,15 @@ print cBencode.loads('t')
 print cBencode.loads('i123e')
 print repr(cBencode.loads('0:'))
 print repr(cBencode.loads('3:foo'))
+print repr(cBencode.loads('3:f\x00o'))
 
 
 print repr(cBencode.loads('le'))
 print repr(cBencode.loads('lnfti1ei2ei3ee'))
+print repr(cBencode.loads('l1:I2:am3:fooe'))
+
+print repr(cBencode.loads('de'))
+print repr(cBencode.loads('di1ei2ee'))
+print repr(cBencode.loads('d0:i1ee'))
+print repr(cBencode.loads('d' '3:foo' 'i1e' 'e'))
 

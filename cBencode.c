@@ -142,6 +142,7 @@ static PyObject *do_load(struct benc_read *br) {
 	PyObject *retval = NULL;
 
 	char first = benc_read_char(br);
+	//printf("%c\n", first);
 
 	switch (first) {
 		case 'n':
@@ -192,11 +193,12 @@ static PyObject *do_load(struct benc_read *br) {
 				current = benc_read_char(br);
 			}
 			retval = PyString_FromStringAndSize(br->buffer + br->offset, size);
+			br->offset += size;
 
 			} break;
 		case 'e':
 			Py_INCREF(PyExc_StopIteration);
-        	retval = PyExc_StopIteration;
+			retval = PyExc_StopIteration;
 			break;
 		case 'l': {
 			PyObject *v = PyList_New(0);
@@ -221,6 +223,34 @@ static PyObject *do_load(struct benc_read *br) {
 				PyList_Append(v, item);
 			}
 
+			retval = v;
+			} break;
+		case 'd': {
+			PyObject *v = PyDict_New();
+			// R_REF(v);
+			// if (v == NULL) {
+			// 	retval = NULL;
+			// 	break;
+			// }
+			while (1) {
+				PyObject *key, *val;
+				key = do_load(br);
+				if (key == NULL)
+					break;
+				if (key == PyExc_StopIteration) {
+					Py_DECREF(PyExc_StopIteration);
+					break;
+				}
+				val = do_load(br);
+				if (val != NULL)
+					PyDict_SetItem(v, key, val);
+				Py_DECREF(key);
+				Py_XDECREF(val);
+			}
+			// if (PyErr_Occurred()) {
+			// 	Py_DECREF(v);
+			// 	v = NULL;
+			// }
 			retval = v;
 			} break;
 
