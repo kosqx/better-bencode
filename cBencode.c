@@ -85,14 +85,29 @@ static void benc_state_write_format(struct benc_state* bs, const int limit, cons
 
 
 static char benc_state_read_char(struct benc_state* bs) {
-    return bs->buffer[bs->offset++];
+    if (bs->file == NULL) {
+        return bs->buffer[bs->offset++];
+    } else {
+        char *buffer;
+        char result;
+        Py_ssize_t length;
+        PyObject *data =  PyObject_CallMethod(bs->file, "read", "i", 1);
+        PyString_AsStringAndSize(data, &buffer, &length);
+        result = buffer[0];
+        Py_DECREF(data);
+        return result;
+    }
 }
 
 
 static PyObject *benc_state_read_pystring(struct benc_state* bs, int size) {
-    PyObject *result = PyString_FromStringAndSize(bs->buffer + bs->offset, size);
-    bs->offset += size;
-    return result;
+    if (bs->file == NULL) {
+        PyObject *result = PyString_FromStringAndSize(bs->buffer + bs->offset, size);
+        bs->offset += size;
+        return result;
+    } else {
+        return PyObject_CallMethod(bs->file, "read", "i", size);
+    }
 }
 
 
@@ -313,6 +328,20 @@ static PyObject *do_load(struct benc_state *bs) {
 }
 
 
+static PyObject* load(PyObject* self, PyObject* args) {
+    struct benc_state bs;
+    bs.offset = 0;
+    bs.file = NULL;
+
+    if (!PyArg_ParseTuple(args, "O", &(bs.file)))
+        return NULL;
+
+    PyObject* obj = do_load(&bs);
+
+    return obj;
+}
+
+
 static PyObject* loads(PyObject* self, PyObject* args) {
     struct benc_state bs;
     bs.offset = 0;
@@ -328,6 +357,7 @@ static PyObject* loads(PyObject* self, PyObject* args) {
 
 
 static PyMethodDef cBencodeMethods[] = {
+    {"load", load, METH_VARARGS, "load"},
     {"loads", loads, METH_VARARGS, "loads"},
     {"dump", dump, METH_VARARGS, "Write the value on the open file."},
     {"dumps", dumps, METH_VARARGS, "Return string with value"},

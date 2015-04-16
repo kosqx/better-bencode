@@ -30,6 +30,12 @@ def test_loads(binary, struct):
 
 
 @pytest.mark.parametrize(('binary', 'struct'), TEST_DATA)
+def test_load(binary, struct):
+    fp = StringIO(binary)
+    assert cBencode.load(fp) == struct
+
+
+@pytest.mark.parametrize(('binary', 'struct'), TEST_DATA)
 def test_dumps(binary, struct):
     assert cBencode.dumps(struct) == binary
 
