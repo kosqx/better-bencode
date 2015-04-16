@@ -85,3 +85,8 @@ print repr(cBencode.loads('de'))
 print repr(cBencode.loads('di1ei2ee'))
 print repr(cBencode.loads('d0:i1ee'))
 print repr(cBencode.loads('d' '3:foo' 'i1e' 'e'))
+
+
+print cBencode.dumps({})
+print cBencode.dumps([None, False, True])
+print cBencode.dumps(['a', 'bc', 'def', 'ghij'])
