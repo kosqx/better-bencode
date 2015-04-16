@@ -84,6 +84,11 @@ static void benc_state_write_format(struct benc_state* bs, const int limit, cons
 }
 
 
+static char benc_state_read_char(struct benc_state* bs) {
+    return bs->buffer[bs->offset++];
+}
+
+
 static int do_dump(struct benc_state *bs, PyObject* obj);
 
 static int do_dump(struct benc_state *bs, PyObject* obj) {
@@ -176,24 +181,10 @@ static PyObject* dumps(PyObject* self, PyObject* args) {
 }
 
 
-struct benc_read {
-    int size;
-    int offset;
-    char *buffer;
-    // PyObject* fin;
-};
-
-static char benc_read_char(struct benc_read *br) {
-    if (br->buffer != NULL) {
-        return br->buffer[br->offset++];
-    }
-}
-
-
-static PyObject *do_load(struct benc_read *br) {
+static PyObject *do_load(struct benc_state *bs) {
     PyObject *retval = NULL;
 
-    char first = benc_read_char(br);
+    char first = benc_state_read_char(bs);
     //printf("%c\n", first);
 
     switch (first) {
@@ -212,15 +203,15 @@ static PyObject *do_load(struct benc_read *br) {
         case 'i': {
             int sign = 1;
             long long value = 0;
-            char current = benc_read_char(br);
+            char current = benc_state_read_char(bs);
             if (current == '-') {
                 sign = -1;
-                current = benc_read_char(br);
+                current = benc_state_read_char(bs);
             }
             // TODO: sprawdzanie przedzialow
             while (('0' <= current) && (current <= '9')) {
                 value = value * 10 + (current - '0');
-                current = benc_read_char(br);
+                current = benc_state_read_char(bs);
             }
             value *= sign;
             retval = PyLong_FromLongLong(value);
@@ -238,14 +229,14 @@ static PyObject *do_load(struct benc_read *br) {
         case '8':
         case '9': {
             int size = first - '0';
-            char current = benc_read_char(br);
+            char current = benc_state_read_char(bs);
             // TODO: sprawdzanie przedzialow
             while (('0' <= current) && (current <= '9')) {
                 size = size * 10 + (current - '0');
-                current = benc_read_char(br);
+                current = benc_state_read_char(bs);
             }
-            retval = PyString_FromStringAndSize(br->buffer + br->offset, size);
-            br->offset += size;
+            retval = PyString_FromStringAndSize(bs->buffer + bs->offset, size);
+            bs->offset += size;
 
             } break;
         case 'e':
@@ -257,7 +248,7 @@ static PyObject *do_load(struct benc_read *br) {
             PyObject *item;
 
             while (1) {
-                item = do_load(br);
+                item = do_load(bs);
                 if (item == PyExc_StopIteration) {
                     Py_DECREF(PyExc_StopIteration);
                     break;
@@ -286,14 +277,14 @@ static PyObject *do_load(struct benc_read *br) {
             // }
             while (1) {
                 PyObject *key, *val;
-                key = do_load(br);
+                key = do_load(bs);
                 if (key == NULL)
                     break;
                 if (key == PyExc_StopIteration) {
                     Py_DECREF(PyExc_StopIteration);
                     break;
                 }
-                val = do_load(br);
+                val = do_load(bs);
                 if (val != NULL)
                     PyDict_SetItem(v, key, val);
                 Py_DECREF(key);
@@ -318,16 +309,16 @@ static PyObject *do_load(struct benc_read *br) {
 
 
 static PyObject* loads(PyObject* self, PyObject* args) {
-    struct benc_read br;
-    br.offset = 0;
+    struct benc_state bs;
+    bs.offset = 0;
+    bs.file = NULL;
 
-    if (!PyArg_ParseTuple(args, "s#", &(br.buffer), &(br.size)))
+    if (!PyArg_ParseTuple(args, "s#", &(bs.buffer), &(bs.size)))
         return NULL;
 
-    PyObject* obj = do_load(&br);
+    PyObject* obj = do_load(&bs);
 
     return obj;
-    //return Py_BuildValue("s#", bs.buffer, bs.offset);
 }
 
 
