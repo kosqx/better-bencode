@@ -89,6 +89,13 @@ static char benc_state_read_char(struct benc_state* bs) {
 }
 
 
+static PyObject *benc_state_read_pystring(struct benc_state* bs, int size) {
+    PyObject *result = PyString_FromStringAndSize(bs->buffer + bs->offset, size);
+    bs->offset += size;
+    return result;
+}
+
+
 static int do_dump(struct benc_state *bs, PyObject* obj);
 
 static int do_dump(struct benc_state *bs, PyObject* obj) {
@@ -235,9 +242,7 @@ static PyObject *do_load(struct benc_state *bs) {
                 size = size * 10 + (current - '0');
                 current = benc_state_read_char(bs);
             }
-            retval = PyString_FromStringAndSize(bs->buffer + bs->offset, size);
-            bs->offset += size;
-
+            retval = benc_state_read_pystring(bs, size);
             } break;
         case 'e':
             Py_INCREF(PyExc_StopIteration);
