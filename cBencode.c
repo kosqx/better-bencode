@@ -32,14 +32,6 @@ static void benc_state_flush(struct benc_state* bs) {
 }
 
 
-static void benc_state_try_flush(struct benc_state* bs) {
-    if (bs->offset >= bs->size) {
-        PyObject_CallMethod(bs->file, "write", "s#", bs->buffer, bs->offset);
-        bs->offset = 0;
-    }
-}
-
-
 static void benc_state_write_char(struct benc_state* bs, char c) {
     if (bs->file == NULL) {
         if (bs->offset + 1 >= bs->size) {
@@ -47,8 +39,11 @@ static void benc_state_write_char(struct benc_state* bs, char c) {
         }
         bs->buffer[bs->offset++] = c;
     } else {
+        if (bs->offset + 1 >= bs->size) {
+            PyObject_CallMethod(bs->file, "write", "s#", bs->buffer, bs->offset);
+            bs->offset = 0;
+        }
         bs->buffer[bs->offset++] = c;
-        benc_state_try_flush(bs);
     }
 }
 
@@ -63,10 +58,15 @@ static void benc_state_write_buffer(struct benc_state* bs, char* buff, int size)
         memcpy(bs->buffer + bs->offset, buff, size);
         bs->offset += size;
     } else {
-        int i;
-        for (i = 0; i < size; i++) {
-            bs->buffer[bs->offset++] = buff[i];
-            benc_state_try_flush(bs);
+        if (bs->offset + size >= bs->size) {
+            PyObject_CallMethod(bs->file, "write", "s#", bs->buffer, bs->offset);
+            bs->offset = 0;
+        }
+        if (size >= bs->size) {
+            PyObject_CallMethod(bs->file, "write", "s#", buff, size);
+        } else {
+            memcpy(bs->buffer + bs->offset, buff, size);
+            bs->offset += size;
         }
     }
 }
