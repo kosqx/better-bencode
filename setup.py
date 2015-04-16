@@ -1,29 +1,15 @@
-#from distutils.core import setup, Extension
-
-#module1 = Extension('qx',
-                    #sources = ['qx.c'])
-
-#setup (name = 'qx',
-       #version = '1.0',
-       #description = 'This is a demo package',
-       #ext_modules = [module1]) 
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 
-#from distutils.core import setup, Extension
- 
-#module1 = Extension('hello', sources = ['hellomodule.c'])
- 
-#setup (name = 'PackageName',
-        #version = '1.0',
-        #description = 'This is a demo package',
-        #ext_modules = [module1])
-        
-        
 from distutils.core import setup, Extension
- 
-module1 = Extension('cBencode', sources = ['cBencode.c'])
- 
-setup (name = 'PackageName',
-        version = '1.0',
-        description = 'This is a demo package',
-        ext_modules = [module1])
+
+
+setup(
+    name='cBencode',
+    version='0.1',
+    description='Bencode implemented as Python C  Extension',
+    ext_modules=[
+        Extension('cBencode', sources=['cBencode.c']),
+    ],
+)
