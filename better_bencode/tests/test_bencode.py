@@ -8,7 +8,7 @@ from cStringIO import StringIO
 import pytest
 
 
-import cBencode
+import better_bencode_fast as bencode
 
 
 TEST_DATA = [
@@ -28,22 +28,22 @@ TEST_DATA = [
 
 @pytest.mark.parametrize(('binary', 'struct'), TEST_DATA)
 def test_loads(binary, struct):
-    cBencode.loads(binary) == struct
+    assert bencode.loads(binary) == struct
 
 
 @pytest.mark.parametrize(('binary', 'struct'), TEST_DATA)
 def test_load(binary, struct):
     fp = StringIO(binary)
-    assert cBencode.load(fp) == struct
+    assert bencode.load(fp) == struct
 
 
 @pytest.mark.parametrize(('binary', 'struct'), TEST_DATA)
 def test_dumps(binary, struct):
-    assert cBencode.dumps(struct) == binary
+    assert bencode.dumps(struct) == binary
 
 
 @pytest.mark.parametrize(('binary', 'struct'), TEST_DATA)
 def test_dump(binary, struct):
     fp = StringIO()
-    cBencode.dump(struct, fp)
+    bencode.dump(struct, fp)
     assert fp.getvalue() == binary

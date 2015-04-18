@@ -374,7 +374,7 @@ static PyObject* loads(PyObject* self, PyObject* args) {
 }
 
 
-static PyMethodDef cBencodeMethods[] = {
+static PyMethodDef better_bencode_fastMethods[] = {
     {"load", load, METH_VARARGS, "load"},
     {"loads", loads, METH_VARARGS, "loads"},
     {"dump", dump, METH_VARARGS, "Write the value on the open file."},
@@ -384,6 +384,6 @@ static PyMethodDef cBencodeMethods[] = {
 
 PyMODINIT_FUNC
 
-initcBencode(void) {
-    (void) Py_InitModule("cBencode", cBencodeMethods);
+initbetter_bencode_fast(void) {
+    (void) Py_InitModule("better_bencode_fast", better_bencode_fastMethods);
 }
