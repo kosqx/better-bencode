@@ -21,6 +21,8 @@ TEST_DATA = [
     ('4:spam', 'spam'),
     ('l4:spami42ee', ['spam', 42]),
     ('d3:fooi42ee', {'foo': 42}),
+    ('d' '3:bar' '4:spam' '3:foo' 'i42e' 'e', {'bar': 'spam', 'foo': 42}),
+    ('d' '1:a' 'i1e' '1:b' 'i2e' '1:c' 'i3e' 'e', {'a': 1, 'b': 2, 'c': 3}),
 ]
 
 

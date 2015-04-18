@@ -147,15 +147,33 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
         }
         benc_state_write_char(bs, 'e');
     } else if (PyDict_CheckExact(obj)) {
-        Py_ssize_t pos = 0;
-        PyObject *key, *value;
+        if (1) {
+            Py_ssize_t index = 0;
+            PyObject *keys, *key, *value;
+            keys = PyDict_Keys(obj);
+            PyList_Sort(keys);
 
-        benc_state_write_char(bs, 'd');
-        while (PyDict_Next(obj, &pos, &key, &value)) {
-            do_dump(bs, key);
-            do_dump(bs, value);
+            benc_state_write_char(bs, 'd');
+            for (index = 0; index < PyList_Size(keys); index++) {
+                key = PyList_GetItem(keys, index);
+                value = PyDict_GetItem(obj, key);
+                do_dump(bs, key);
+                do_dump(bs, value);
+            }
+            benc_state_write_char(bs, 'e');
+
+            Py_DECREF(keys);
+        } else {
+            Py_ssize_t pos = 0;
+            PyObject *key, *value;
+
+            benc_state_write_char(bs, 'd');
+            while (PyDict_Next(obj, &pos, &key, &value)) {
+                do_dump(bs, key);
+                do_dump(bs, value);
+            }
+            benc_state_write_char(bs, 'e');
         }
-        benc_state_write_char(bs, 'e');
     } else {
         printf("WTF??\n");
     }
