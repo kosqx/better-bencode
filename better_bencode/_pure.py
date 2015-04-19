@@ -11,7 +11,9 @@ except ImportError:
 def _dump_implementation(obj, write):
     t = type(obj)
 
-    if t is int or t is long:
+    if obj is None or obj is False or obj is True:
+        write({None: 'n', False: 'f', True: 't'}[obj])
+    elif t is int or t is long:
         #write('i%de' % obj)
         write('i')
         write(str(obj))
@@ -69,12 +71,16 @@ def read_until(delimiter, read):
 
 
 def _load_implementation(read):
+    special = {'n': None, 'f': False, 't': True}
+
     first = read(1)
     # if not first:
     #         raise ValueError('unexpected end of data (cmd)')
 
     if first == 'e':
         return StopIteration
+    elif first in special:
+        return special[first]
     elif first == 'i':
         return int(read_until('e', read))
     elif '0' <= first <= '9':
