@@ -5,6 +5,7 @@
 __pycache__/
 build/
 tmp/
+dist/
 .tox/
 MANIFEST
 *.egg-info/
