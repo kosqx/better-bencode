@@ -2,7 +2,16 @@
 # -*- coding: utf-8 -*-
 
 
-from cStringIO import StringIO
+import sys
+
+
+if sys.version_info[0] == 2:
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
+else:
+    from io import BytesIO as StringIO
 
 
 import pytest
@@ -20,22 +29,22 @@ MODULES = [module for module in [auto, fast, pure] if module is not None]
 
 
 TEST_DATA = [
-    ('de', {}),
-    ('le', []),
-    ('i0e', 0),
-    ('i42e', 42),
-    ('i-42e', -42),
-    ('0:', ''),
-    ('4:spam', 'spam'),
-    ('l4:spami42ee', ['spam', 42]),
-    ('d3:fooi42ee', {'foo': 42}),
-    ('d' '3:bar' '4:spam' '3:foo' 'i42e' 'e', {'bar': 'spam', 'foo': 42}),
-    ('d' '1:a' 'i1e' '1:b' 'i2e' '1:c' 'i3e' 'e', {'a': 1, 'b': 2, 'c': 3}),
+    (b'de', {}),
+    (b'le', []),
+    (b'i0e', 0),
+    (b'i42e', 42),
+    (b'i-42e', -42),
+    (b'0:', b''),
+    (b'4:spam', b'spam'),
+    (b'l4:spami42ee', [b'spam', 42]),
+    (b'd3:fooi42ee', {b'foo': 42}),
+    (b'd3:bar4:spam3:fooi42ee', {b'bar': b'spam', b'foo': 42}),
+    (b'd1:ai1e1:bi2e1:ci3ee', {b'a': 1, b'b': 2, b'c': 3}),
 
     # extra types
-    ('n', None),
-    ('f', False),
-    ('t', True),
+    (b'n', None),
+    (b'f', False),
+    (b't', True),
 ]
 TESTS = [
     (module,) + test

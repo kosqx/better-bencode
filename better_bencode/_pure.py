@@ -2,49 +2,63 @@
 # -*- coding: utf-8 -*-
 
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+import sys
 
+
+if sys.version_info[0] == 2:
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
+else:
+    from io import BytesIO as StringIO
+
+
+if sys.version_info[0] == 2:
+    integer_types = (int, long)
+    binary_type = str
+    int_to_binary = lambda val: str(val)
+else:
+    integer_types = (int,)
+    binary_type = bytes
+    int_to_binary = lambda val: bytes(str(val), 'ascii')
 
 def _dump_implementation(obj, write):
     t = type(obj)
 
     if obj is None or obj is False or obj is True:
-        write({None: 'n', False: 'f', True: 't'}[obj])
-    elif t is int or t is long:
+        write({None: b'n', False: b'f', True: b't'}[obj])
+    elif t in integer_types:
         #write('i%de' % obj)
-        write('i')
-        write(str(obj))
-        write('e')
-    elif t is str:
-        write(str(len(obj)))
-        write(':')
+        write(b'i')
+        write(int_to_binary(obj))
+        write(b'e')
+    elif t is binary_type:
+        write(int_to_binary(len(obj)))
+        write(b':')
         write(obj)
     elif t is list:
-        write('l')
+        write(b'l')
         for item in obj:
             _dump_implementation(item, write)
-        write('e')
+        write(b'e')
     elif t is dict:
-        write('d')
+        write(b'd')
         # for key in sorted(obj.keys()):
         #         # if not isinstance(key, str):
         #         #         raise ValueError, 'dictionary key must be a str, %r is not' % key
         #         _dump_implementation(key, write)
         #         _dump_implementation(obj[key], write)
 
-        data = obj.items()
-        data.sort()
+        data = sorted(obj.items())
         for key, val in data:
             # if not isinstance(key, str):
             #         raise ValueError, 'dictionary key must be a str, %r is not' % key
             _dump_implementation(key, write)
             _dump_implementation(val, write)
-        write('e')
+        write(b'e')
     else:
-        raise ValueError, ('unsuported value %r' % (obj, ))
+        raise ValueError('unsuported value %r' % (obj, ))
 
 
 def dump(obj, fp):
@@ -54,11 +68,11 @@ def dump(obj, fp):
 def dumps(obj):
     fp = []
     _dump_implementation(obj, fp.append)
-    return ''.join(fp)
+    return b''.join(fp)
 
 
 def read_until(delimiter, read):
-    result = ''
+    result = b''
     ch = read(1)
     # if not ch:
     #     raise ValueError('unexpected end of data (until)')
@@ -71,46 +85,46 @@ def read_until(delimiter, read):
 
 
 def _load_implementation(read):
-    special = {'n': None, 'f': False, 't': True}
+    special = {b'n': None, b'f': False, b't': True}
 
     first = read(1)
     # if not first:
     #         raise ValueError('unexpected end of data (cmd)')
 
-    if first == 'e':
+    if first == b'e':
         return StopIteration
     elif first in special:
         return special[first]
-    elif first == 'i':
-        return int(read_until('e', read))
-    elif '0' <= first <= '9':
-        size = int(first + read_until(':', read))
+    elif first == b'i':
+        return int(read_until(b'e', read))
+    elif b'0' <= first <= b'9':
+        size = int(first + read_until(b':', read))
         data = read(size)
         # if len(data) != size:
         #         raise ValueError('unexpected end of data (str)')
         return data
-    elif first == 'l':
+    elif first == b'l':
         result = []
         while True:
             val = _load_implementation(read)
             if val is StopIteration:
                 return result
             result.append(val)
-    elif first == 'd':
+    elif first == b'd':
         result = {}
         while True:
             # key = _load_implementation(read)
             # if key is StopIteration:
             #         return result
             this = read(1)
-            if this == 'e':
+            if this == b'e':
                 return result
-            size = int(this + read_until(':', read))
+            size = int(this + read_until(b':', read))
             key = read(size)
             val = _load_implementation(read)
             result[key] = val
     else:
-        raise ValueError, 'unsuported value %r' % first
+        raise ValueError('unsuported value %r' % first)
 
 
 def load(fd):
