@@ -16,6 +16,14 @@ def read(filename):
     return data
 
 
+if hasattr(sys, 'pypy_version_info'):
+    ext_modules = []
+else:
+    ext_modules = [
+        Extension('better_bencode_fast', sources=['better_bencode/_fast.c']),
+    ]
+
+
 setup(
     name='better-bencode',
     version='0.1',
@@ -42,11 +50,10 @@ setup(
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Implementation :: PyPy',
     ],
     extras_require={
         'testing': ['pytest'],
     },
-    ext_modules=[
-        Extension('better_bencode_fast', sources=['better_bencode/_fast.c']),
-    ],
+    ext_modules=ext_modules,
 )

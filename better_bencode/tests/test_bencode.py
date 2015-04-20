@@ -8,9 +8,15 @@ from cStringIO import StringIO
 import pytest
 
 
-import better_bencode_fast as fast
 import better_bencode._pure as pure
 import better_bencode as auto
+try:
+    import better_bencode_fast as fast
+except ImportError:
+    fast = None
+
+
+MODULES = [module for module in [auto, fast, pure] if module is not None]
 
 
 TEST_DATA = [
@@ -33,7 +39,7 @@ TEST_DATA = [
 ]
 TESTS = [
     (module,) + test
-    for module in [auto, fast, pure]
+    for module in MODULES
     for test in TEST_DATA
 ]
 
