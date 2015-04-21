@@ -74,3 +74,9 @@ def test_dump(module, binary, struct):
     fp = StringIO()
     module.dump(struct, fp)
     assert fp.getvalue() == binary
+
+
+def test_import_fast():
+    if hasattr(sys, 'pypy_version_info'):
+        return
+    import better_bencode_fast
