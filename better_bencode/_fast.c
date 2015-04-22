@@ -187,7 +187,11 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
             benc_state_write_char(bs, 'e');
         }
     } else {
-        printf("WTF??\n");
+        PyErr_Format(
+            PyExc_TypeError,
+            "type %s is not Bencode serializable",
+            Py_TYPE(obj)->tp_name
+        );
     }
     return 0;
 }
@@ -209,7 +213,11 @@ static PyObject* dump(PyObject* self, PyObject* args) {
     benc_state_flush(&bs);
     benc_state_free(&bs);
 
-    return Py_BuildValue(PY_BUILD_VALUE_BYTES, bs.buffer, bs.offset);
+    if (PyErr_Occurred()) {
+        return NULL;
+    } else {
+        return Py_BuildValue(PY_BUILD_VALUE_BYTES, bs.buffer, bs.offset);
+    }
 }
 
 
@@ -225,11 +233,14 @@ static PyObject* dumps(PyObject* self, PyObject* args) {
 
     do_dump(&bs, obj);
 
-    result = Py_BuildValue(PY_BUILD_VALUE_BYTES, bs.buffer, bs.offset);
-
-    benc_state_free(&bs);
-
-    return result;
+    if (PyErr_Occurred()) {
+        benc_state_free(&bs);
+        return NULL;
+    } else {
+        result = Py_BuildValue(PY_BUILD_VALUE_BYTES, bs.buffer, bs.offset);
+        benc_state_free(&bs);
+        return result;
+    }
 }
 
 

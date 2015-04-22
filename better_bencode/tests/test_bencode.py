@@ -80,3 +80,29 @@ def test_import_fast():
     if hasattr(sys, 'pypy_version_info'):
         return
     import better_bencode_fast
+
+
+#####################################################################
+# dump TypeError tests
+
+
+TESTS_TYPEERROR = [
+    (module,  test)
+    for module in MODULES
+    for test in [u'', (), set(), frozenset(), len, TypeError]
+]
+
+
+@pytest.mark.parametrize(('module', 'struct'), TESTS_TYPEERROR)
+def test_dump_typeerror(module, struct):
+    with pytest.raises(TypeError) as excinfo:
+        fp = StringIO()
+        module.dump(struct, fp)
+    assert type(struct).__name__ in str(excinfo.value)
+
+
+@pytest.mark.parametrize(('module', 'struct'), TESTS_TYPEERROR)
+def test_dumps_typeerror(module, struct):
+    with pytest.raises(TypeError) as excinfo:
+        module.dumps(struct)
+    assert type(struct).__name__ in str(excinfo.value)

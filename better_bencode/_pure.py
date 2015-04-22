@@ -58,7 +58,9 @@ def _dump_implementation(obj, write):
             _dump_implementation(val, write)
         write(b'e')
     else:
-        raise ValueError('unsuported value %r' % (obj, ))
+        raise TypeError(
+            'type %s is not Bencode serializable' % type(obj).__name__
+        )
 
 
 def dump(obj, fp):
