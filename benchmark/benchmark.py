@@ -5,8 +5,8 @@
 import time
 from cStringIO import StringIO
 
-import cBencode
-import bcode
+import better_bencode._pure as pure
+import better_bencode_fast as fast
 
 import json
 import simplejson
@@ -33,10 +33,10 @@ class Empty(object):
 
 REPEATS = 1000
 
-print '%-10s  %10s  %10s  %10s  %10s  %6s' % (
+print '%-20s  %10s  %10s  %10s  %10s  %6s' % (
     'MODULE', 'dump', 'dumps', 'load', 'loads', 'SIZE'
 )
-for module in [Empty(), cBencode, bcode, json, simplejson, marshal, pickle, cPickle, msgpack]:
+for module in [Empty(), fast, pure, json, simplejson, marshal, pickle, cPickle, msgpack]:
     time_start = time.time()
     for example in EXAMPLES:
         for i in xrange(REPEATS * (module != marshal)):
@@ -68,7 +68,7 @@ for module in [Empty(), cBencode, bcode, json, simplejson, marshal, pickle, cPic
 
     size = sum(len(module.dumps(example)) for example in EXAMPLES)
 
-    print '%-10s  %8.3fms  %8.3fms  %8.3fms  %8.3fms  %5dB' % (
+    print '%-20s  %8.3fms  %8.3fms  %8.3fms  %8.3fms  %5dB' % (
         module.__name__,
         dump_duration * 1000.0, dumps_duration * 1000.0,
         load_duration * 1000.0, loads_duration * 1000.0,
