@@ -106,3 +106,27 @@ def test_dumps_typeerror(module, struct):
     with pytest.raises(TypeError) as excinfo:
         module.dumps(struct)
     assert type(struct).__name__ in str(excinfo.value)
+
+
+#####################################################################
+# load ValueError tests
+
+
+TESTS_VALUEERROR = [
+    (module,  test)
+    for module in MODULES
+    for test in [b'<', b' ']
+]
+
+
+@pytest.mark.parametrize(('module', 'binary'), TESTS_VALUEERROR)
+def test_load_valueerror(module, binary):
+    with pytest.raises(ValueError) as excinfo:
+        fp = StringIO(binary)
+        module.load(fp)
+
+
+@pytest.mark.parametrize(('module', 'binary'), TESTS_VALUEERROR)
+def test_loads_valueerror(module, binary):
+    with pytest.raises(ValueError) as excinfo:
+        module.loads(binary)

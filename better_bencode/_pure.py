@@ -126,7 +126,7 @@ def _load_implementation(read):
             val = _load_implementation(read)
             result[key] = val
     else:
-        raise ValueError('unsuported value %r' % first)
+        raise ValueError('unexpected byte 0x%.2x' % ord(first))
 
 
 def load(fd):

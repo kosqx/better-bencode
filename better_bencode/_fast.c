@@ -359,9 +359,11 @@ static PyObject *do_load(struct benc_state *bs) {
             } break;
 
         default:
-            /* Bogus data got written, which isn't ideal.
-               This will let you keep working and recover. */
-            // PyErr_SetString(PyExc_ValueError, "bad input data");
+            PyErr_Format(
+                PyExc_ValueError,
+                "unexpected byte 0x%.2x",
+                first
+            );
             retval = NULL;
             break;
     }
