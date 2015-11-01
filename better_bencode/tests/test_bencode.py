@@ -40,6 +40,7 @@ TEST_DATA = [
     (b'd3:fooi42ee', {b'foo': 42}),
     (b'd3:bar4:spam3:fooi42ee', {b'bar': b'spam', b'foo': 42}),
     (b'd1:ai1e1:bi2e1:ci3ee', {b'a': 1, b'b': 2, b'c': 3}),
+    (b'd1:a1:be', {b'a': b'b'}),
 
     # extra types
     (b'n', None),
@@ -113,20 +114,41 @@ def test_dumps_typeerror(module, struct):
 
 
 TESTS_VALUEERROR = [
-    (module,  test)
+    (module,  binary, msg)
     for module in MODULES
-    for test in [b'<', b' ']
+    for binary, msg in [
+        (b'<', 'unexpected byte 0x3c'),
+        (b' ', 'unexpected byte 0x20'),
+        (b'x', 'unexpected byte 0x78'),
+        (b'', 'unexpected end of data'),
+
+        (b'l', 'unexpected end of data'),
+        (b'lx', 'unexpected byte 0x78'),
+        (b'lxe', 'unexpected byte 0x78'),
+        (b'l1:a', 'unexpected end of data'),
+        (b'l1:ax', 'unexpected byte 0x78'),
+
+        (b'd', 'unexpected end of data'),
+        (b'dx', 'unexpected byte 0x78'),
+        (b'dxe', 'unexpected byte 0x78'),
+        (b'd1:a', 'unexpected end of data'),
+        (b'd1:ax', 'unexpected byte 0x78'),
+        (b'd1:a1:b', 'unexpected end of data'),
+        (b'd1:a1:bx', 'unexpected byte 0x78'),
+    ]
 ]
 
 
-@pytest.mark.parametrize(('module', 'binary'), TESTS_VALUEERROR)
-def test_load_valueerror(module, binary):
+@pytest.mark.parametrize(('module', 'binary', 'msg'), TESTS_VALUEERROR)
+def test_load_valueerror(module, binary, msg):
     with pytest.raises(ValueError) as excinfo:
         fp = StringIO(binary)
         module.load(fp)
+    assert str(excinfo.value) == msg
 
 
-@pytest.mark.parametrize(('module', 'binary'), TESTS_VALUEERROR)
-def test_loads_valueerror(module, binary):
+@pytest.mark.parametrize(('module', 'binary', 'msg'), TESTS_VALUEERROR)
+def test_loads_valueerror(module, binary, msg):
     with pytest.raises(ValueError) as excinfo:
         module.loads(binary)
+    assert str(excinfo.value) == msg

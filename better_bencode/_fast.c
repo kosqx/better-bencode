@@ -94,16 +94,26 @@ static void benc_state_write_format(struct benc_state* bs, const int limit, cons
 }
 
 
-static char benc_state_read_char(struct benc_state* bs) {
+static int benc_state_read_char(struct benc_state* bs) {
     if (bs->file == NULL) {
-        return bs->buffer[bs->offset++];
+        if (bs->offset < bs->size) {
+            return bs->buffer[bs->offset++];
+        } else {
+            return -1;
+        }
     } else {
         char *buffer;
-        char result;
+        int result;
         Py_ssize_t length;
         PyObject *data =  PyObject_CallMethod(bs->file, "read", "i", 1);
-        PyString_AsStringAndSize(data, &buffer, &length);
-        result = buffer[0];
+        if (-1 == PyString_AsStringAndSize(data, &buffer, &length)) {
+            return -1;
+        }
+        if (length == 1) {
+            result = buffer[0];
+        } else {
+            result = -1;
+        }
         Py_DECREF(data);
         return result;
     }
@@ -247,8 +257,7 @@ static PyObject* dumps(PyObject* self, PyObject* args) {
 static PyObject *do_load(struct benc_state *bs) {
     PyObject *retval = NULL;
 
-    char first = benc_state_read_char(bs);
-    //printf("%c\n", first);
+    int first = benc_state_read_char(bs);
 
     switch (first) {
         case 'n':
@@ -266,7 +275,7 @@ static PyObject *do_load(struct benc_state *bs) {
         case 'i': {
             int sign = 1;
             long long value = 0;
-            char current = benc_state_read_char(bs);
+            int current = benc_state_read_char(bs);
             if (current == '-') {
                 sign = -1;
                 current = benc_state_read_char(bs);
@@ -310,20 +319,24 @@ static PyObject *do_load(struct benc_state *bs) {
 
             while (1) {
                 item = do_load(bs);
+
                 if (item == PyExc_StopIteration) {
                     Py_DECREF(PyExc_StopIteration);
                     break;
                 }
 
+                if (item == NULL) {
+                    if (!PyErr_Occurred()) {
+                        PyErr_SetString(
+                            PyExc_TypeError,
+                            "unexpected error in list"
+                        );
+                    }
+                    Py_DECREF(v);
+                    v = NULL;
+                    break;
+                }
 
-                // if ( v2 == NULL ) {
-                //  if (!PyErr_Occurred())
-                //      PyErr_SetString(PyExc_TypeError,
-                //          "NULL object in marshal data for list");
-                //  Py_DECREF(v);
-                //  v = NULL;
-                //  break;
-                // }
                 PyList_Append(v, item);
             }
 
@@ -331,6 +344,8 @@ static PyObject *do_load(struct benc_state *bs) {
             } break;
         case 'd': {
             PyObject *v = PyDict_New();
+            
+
             // R_REF(v);
             // if (v == NULL) {
             //  retval = NULL;
@@ -338,26 +353,46 @@ static PyObject *do_load(struct benc_state *bs) {
             // }
             while (1) {
                 PyObject *key, *val;
+                key = val = NULL;
                 key = do_load(bs);
-                if (key == NULL)
-                    break;
+                
                 if (key == PyExc_StopIteration) {
                     Py_DECREF(PyExc_StopIteration);
                     break;
                 }
+
+                if (key == NULL) {
+                    if (!PyErr_Occurred()) {
+                        PyErr_SetString(PyExc_TypeError, "unexpected error in dict");
+                    }
+                    break;
+                }
+
                 val = do_load(bs);
-                if (val != NULL)
+                if (val != NULL) {
                     PyDict_SetItem(v, key, val);
+                } else {
+                    if (!PyErr_Occurred()) {
+                        PyErr_SetString(PyExc_TypeError, "unexpected error in dict");
+                    }
+                    break;
+                }
                 Py_DECREF(key);
                 Py_XDECREF(val);
             }
-            // if (PyErr_Occurred()) {
-            //  Py_DECREF(v);
-            //  v = NULL;
-            // }
+            if (PyErr_Occurred()) {
+                Py_DECREF(v);
+                v = NULL;
+            }
             retval = v;
             } break;
-
+        case -1: {
+            PyErr_Format(
+                PyExc_ValueError,
+                "unexpected end of data"
+            );
+            retval = NULL;
+            } break;
         default:
             PyErr_Format(
                 PyExc_ValueError,

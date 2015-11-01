@@ -121,10 +121,16 @@ def _load_implementation(read):
             this = read(1)
             if this == b'e':
                 return result
+            elif this == b'':
+                raise ValueError('unexpected end of data')
+            elif not this.isdigit():
+                raise ValueError('unexpected byte 0x%.2x' % ord(this))
             size = int(this + read_until(b':', read))
             key = read(size)
             val = _load_implementation(read)
             result[key] = val
+    elif first == b'':
+        raise ValueError('unexpected end of data')
     else:
         raise ValueError('unexpected byte 0x%.2x' % ord(first))
 
