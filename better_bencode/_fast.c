@@ -5,6 +5,7 @@
 #define PY_BUILD_VALUE_BYTES "y#"
 #define PyString_FromStringAndSize PyBytes_FromStringAndSize
 #define PyString_AsStringAndSize PyBytes_AsStringAndSize
+#define PyString_Size PyBytes_Size
 #define PyInt_Check(obj) 0
 #else
 #define PY_BUILD_VALUE_BYTES "s#"
@@ -122,11 +123,29 @@ static int benc_state_read_char(struct benc_state* bs) {
 
 static PyObject *benc_state_read_pystring(struct benc_state* bs, int size) {
     if (bs->file == NULL) {
-        PyObject *result = PyString_FromStringAndSize(bs->buffer + bs->offset, size);
-        bs->offset += size;
-        return result;
+        if (bs->offset + size <= bs->size) {
+            PyObject *result = PyString_FromStringAndSize(bs->buffer + bs->offset, size);
+            bs->offset += size;
+            return result;
+        } else {
+            PyErr_Format(
+                PyExc_ValueError,
+                "unexpected end of data"
+            );
+            return NULL;
+        }
     } else {
-        return PyObject_CallMethod(bs->file, "read", "i", size);
+        PyObject *result = PyObject_CallMethod(bs->file, "read", "i", size);
+        if (PyString_Size(result) == size) {
+            return result;
+        } else {
+            Py_DECREF(result);
+            PyErr_Format(
+                PyExc_ValueError,
+                "unexpected end of data"
+            );
+            return NULL;
+        }
     }
 }
 
@@ -302,12 +321,27 @@ static PyObject *do_load(struct benc_state *bs) {
         case '9': {
             int size = first - '0';
             char current = benc_state_read_char(bs);
-            // TODO: sprawdzanie przedzialow
             while (('0' <= current) && (current <= '9')) {
                 size = size * 10 + (current - '0');
                 current = benc_state_read_char(bs);
             }
-            retval = benc_state_read_pystring(bs, size);
+            if (':' == current) {
+                retval = benc_state_read_pystring(bs, size);
+            } else if (-1 == current) {
+                PyErr_Format(
+                    PyExc_ValueError,
+                    "unexpected end of data"
+                );
+                retval = NULL;
+            } else {
+                PyErr_Format(
+                    PyExc_ValueError,
+                    "unexpected byte 0x%.2x",
+                    current
+                );
+                retval = NULL;
+            }
+
             } break;
         case 'e':
             Py_INCREF(PyExc_StopIteration);

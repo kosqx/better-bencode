@@ -122,6 +122,10 @@ TESTS_VALUEERROR = [
         (b'x', 'unexpected byte 0x78'),
         (b'', 'unexpected end of data'),
 
+        (b'1', 'unexpected end of data'),
+        (b'1:', 'unexpected end of data'),
+        (b'1x', 'unexpected byte 0x78'),
+
         (b'l', 'unexpected end of data'),
         (b'lx', 'unexpected byte 0x78'),
         (b'lxe', 'unexpected byte 0x78'),

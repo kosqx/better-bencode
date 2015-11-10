@@ -76,13 +76,13 @@ def dumps(obj):
 def read_until(delimiter, read):
     result = b''
     ch = read(1)
-    # if not ch:
-    #     raise ValueError('unexpected end of data (until)')
+    if not ch:
+        raise ValueError('unexpected end of data')
     while ch != delimiter:
         result += ch
         ch = read(1)
-        # if not ch:
-        #     raise ValueError('unexpected end of data (until)')
+        if not ch:
+            raise ValueError('unexpected end of data')
     return result
 
 
@@ -100,10 +100,18 @@ def _load_implementation(read):
     elif first == b'i':
         return int(read_until(b'e', read))
     elif b'0' <= first <= b'9':
-        size = int(first + read_until(b':', read))
+        #size = int(first + read_until(b':', read))
+        size = 0
+        while b'0' <= first <= b'9':
+            size = size * 10 + (ord(first) - ord('0'))
+            first = read(1)
+            if first == b'':
+                raise ValueError('unexpected end of data')
+        if first != b':':
+            raise ValueError('unexpected byte 0x%.2x' % ord(first))
         data = read(size)
-        # if len(data) != size:
-        #         raise ValueError('unexpected end of data (str)')
+        if len(data) != size:
+            raise ValueError('unexpected end of data')
         return data
     elif first == b'l':
         result = []
