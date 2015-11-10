@@ -98,7 +98,16 @@ def _load_implementation(read):
     elif first in special:
         return special[first]
     elif first == b'i':
-        return int(read_until(b'e', read))
+        value = b''
+        ch = read(1)
+        while (b'0' <= ch <= b'9') or (ch == b'-'):
+            value += ch
+            ch = read(1)
+        if ch == b'' or (ch == b'e' and value in (b'', b'-')):
+            raise ValueError('unexpected end of data')
+        if ch != b'e':
+            raise ValueError('unexpected byte 0x%.2x' % ord(ch))
+        return int(value)
     elif b'0' <= first <= b'9':
         #size = int(first + read_until(b':', read))
         size = 0

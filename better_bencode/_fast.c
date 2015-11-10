@@ -293,19 +293,44 @@ static PyObject *do_load(struct benc_state *bs) {
             break;
         case 'i': {
             int sign = 1;
+            int read_cnt = 0;
             long long value = 0;
             int current = benc_state_read_char(bs);
             if (current == '-') {
                 sign = -1;
                 current = benc_state_read_char(bs);
             }
-            // TODO: sprawdzanie przedzialow
             while (('0' <= current) && (current <= '9')) {
                 value = value * 10 + (current - '0');
                 current = benc_state_read_char(bs);
+                read_cnt++;
             }
-            value *= sign;
-            retval = PyLong_FromLongLong(value);
+
+            if ('e' == current) {
+                if (read_cnt > 0) {
+                    value *= sign;
+                    retval = PyLong_FromLongLong(value);
+                } else {
+                    PyErr_Format(
+                        PyExc_ValueError,
+                        "unexpected end of data"
+                    );
+                    retval = NULL;
+                }
+            } else if (-1 == current) {
+                PyErr_Format(
+                    PyExc_ValueError,
+                    "unexpected end of data"
+                );
+                retval = NULL;
+            } else {
+                PyErr_Format(
+                    PyExc_ValueError,
+                    "unexpected byte 0x%.2x",
+                    current
+                );
+                retval = NULL;
+            }
 
             } break;
 
