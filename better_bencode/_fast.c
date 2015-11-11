@@ -17,6 +17,10 @@ struct benc_state {
     int offset;
     char* buffer;
     PyObject* file;
+
+    PyObject** references_stack;
+    int references_size;
+    int references_top;
 };
 
 
@@ -25,12 +29,19 @@ static void benc_state_init(struct benc_state* bs) {
     bs->offset = 0;
     bs->buffer = malloc(bs->size);
     bs->file = NULL;
+
+    bs->references_size = 8;
+    bs->references_top = 0;
+    bs->references_stack = malloc(sizeof(PyObject*) * bs->references_size);
 }
 
 
 static void benc_state_free(struct benc_state* bs) {
     if (bs->buffer != NULL) {
         free(bs->buffer);
+    }
+    if (bs->references_stack != NULL) {
+        free(bs->references_stack);
     }
 }
 
@@ -149,11 +160,45 @@ static PyObject *benc_state_read_pystring(struct benc_state* bs, int size) {
     }
 }
 
+static void benc_state_references_push(struct benc_state* bs, PyObject *obj) {
+    if ((bs->references_top + 1) == bs->references_size) {
+        bs->references_size *= 2;
+        bs->references_stack = realloc(
+            bs->references_stack,
+            sizeof(PyObject*) * bs->references_size
+        );
+    }
+    bs->references_stack[bs->references_top++] = obj;
+}
+
+static void benc_state_references_pop(struct benc_state* bs) {
+    bs->references_top--;
+}
+
+static int benc_state_references_contains(struct benc_state* bs, PyObject *obj) {
+    int i;
+    for (i = 0; i < bs->references_top; i++) {
+        if (bs->references_stack[i] == obj) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 
 static int do_dump(struct benc_state *bs, PyObject* obj);
 
 static int do_dump(struct benc_state *bs, PyObject* obj) {
     int i = 0, n = 0;
+
+    if (benc_state_references_contains(bs, obj)) {
+        PyErr_Format(
+            PyExc_ValueError,
+            "circular reference detected"
+        );
+        return 0;
+    }
+
     if (obj == Py_None) {
         benc_state_write_char(bs, 'n');
     } else if (obj == Py_True) {
@@ -182,11 +227,13 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
         printf("REAL (%G)\n", real_val);
     } else if (PyList_CheckExact(obj)) {
         n = PyList_GET_SIZE(obj);
+        benc_state_references_push(bs, obj);
         benc_state_write_char(bs, 'l');
         for (i = 0; i < n; i++) {
             do_dump(bs, PyList_GET_ITEM(obj, i));
         }
         benc_state_write_char(bs, 'e');
+        benc_state_references_pop(bs);
     } else if (PyDict_CheckExact(obj)) {
         if (1) {
             Py_ssize_t index = 0;
@@ -194,6 +241,7 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
             keys = PyDict_Keys(obj);
             PyList_Sort(keys);
 
+            benc_state_references_push(bs, obj);
             benc_state_write_char(bs, 'd');
             for (index = 0; index < PyList_Size(keys); index++) {
                 key = PyList_GetItem(keys, index);
@@ -202,6 +250,7 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
                 do_dump(bs, value);
             }
             benc_state_write_char(bs, 'e');
+            benc_state_references_pop(bs);
 
             Py_DECREF(keys);
         } else {
@@ -467,8 +516,7 @@ static PyObject *do_load(struct benc_state *bs) {
 
 static PyObject* load(PyObject* self, PyObject* args) {
     struct benc_state bs;
-    bs.offset = 0;
-    bs.file = NULL;
+    memset(&bs, 0, sizeof(struct benc_state));
 
     if (!PyArg_ParseTuple(args, "O", &(bs.file)))
         return NULL;
@@ -481,8 +529,7 @@ static PyObject* load(PyObject* self, PyObject* args) {
 
 static PyObject* loads(PyObject* self, PyObject* args) {
     struct benc_state bs;
-    bs.offset = 0;
-    bs.file = NULL;
+    memset(&bs, 0, sizeof(struct benc_state));
 
     if (!PyArg_ParseTuple(args, PY_BUILD_VALUE_BYTES, &(bs.buffer), &(bs.size)))
         return NULL;

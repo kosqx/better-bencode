@@ -109,6 +109,37 @@ def test_dumps_typeerror(module, struct):
     assert type(struct).__name__ in str(excinfo.value)
 
 
+
+
+@pytest.mark.parametrize('module', MODULES)
+def test_dumps_reference_list(module):
+    a = [[]]
+    a[0].append(a)
+
+    with pytest.raises(ValueError) as excinfo:
+        module.dumps(a)
+    assert str(excinfo.value) == 'circular reference detected'
+
+@pytest.mark.parametrize('module', MODULES)
+def test_dumps_reference_list_deep(module):
+    a = [[[[[[[[[[[[[[[]]]]]]]]]]]]]]]
+    a[0][0][0][0][0][0][0][0][0][0][0][0][0].append(a)
+
+    with pytest.raises(ValueError) as excinfo:
+        module.dumps(a)
+    assert str(excinfo.value) == 'circular reference detected'
+
+
+@pytest.mark.parametrize('module', MODULES)
+def test_dumps_reference_dict(module):
+    a = {b'a': {b'b': {}}}
+    a[b'a'][b'b'][b'c'] = a
+
+    with pytest.raises(ValueError) as excinfo:
+        module.dumps(a)
+    assert str(excinfo.value) == 'circular reference detected'
+
+
 #####################################################################
 # load ValueError tests
 

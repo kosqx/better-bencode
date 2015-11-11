@@ -23,8 +23,11 @@ else:
     binary_type = bytes
     int_to_binary = lambda val: bytes(str(val), 'ascii')
 
-def _dump_implementation(obj, write):
+def _dump_implementation(obj, write, path):
     t = type(obj)
+
+    if id(obj) in path:
+        raise ValueError('circular reference detected')
 
     if obj is None or obj is False or obj is True:
         write({None: b'n', False: b'f', True: b't'}[obj])
@@ -40,7 +43,7 @@ def _dump_implementation(obj, write):
     elif t is list:
         write(b'l')
         for item in obj:
-            _dump_implementation(item, write)
+            _dump_implementation(item, write, path + [id(obj)])
         write(b'e')
     elif t is dict:
         write(b'd')
@@ -54,8 +57,8 @@ def _dump_implementation(obj, write):
         for key, val in data:
             # if not isinstance(key, str):
             #         raise ValueError, 'dictionary key must be a str, %r is not' % key
-            _dump_implementation(key, write)
-            _dump_implementation(val, write)
+            _dump_implementation(key, write, path + [id(obj)])
+            _dump_implementation(val, write, path + [id(obj)])
         write(b'e')
     else:
         raise TypeError(
@@ -64,12 +67,12 @@ def _dump_implementation(obj, write):
 
 
 def dump(obj, fp):
-    _dump_implementation(obj, fp.write)
+    _dump_implementation(obj, fp.write, [])
 
 
 def dumps(obj):
     fp = []
-    _dump_implementation(obj, fp.append)
+    _dump_implementation(obj, fp.append, [])
     return b''.join(fp)
 
 
