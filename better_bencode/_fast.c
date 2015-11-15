@@ -6,7 +6,7 @@
 #define PyString_FromStringAndSize PyBytes_FromStringAndSize
 #define PyString_AsStringAndSize PyBytes_AsStringAndSize
 #define PyString_Size PyBytes_Size
-#define PyInt_Check(obj) 0
+#define PyInt_CheckExact(obj) 0
 #else
 #define PY_BUILD_VALUE_BYTES "s#"
 #endif
@@ -199,19 +199,13 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
         return 0;
     }
 
-    if (obj == Py_None) {
-        benc_state_write_char(bs, 'n');
-    } else if (obj == Py_True) {
-        benc_state_write_char(bs, 't');
-    } else if (obj == Py_False) {
-        benc_state_write_char(bs, 'f');
-    } else if (PyBytes_CheckExact(obj)) {
+    if (PyBytes_CheckExact(obj)) {
         char *buff = PyBytes_AS_STRING(obj);
         int size = PyBytes_GET_SIZE(obj);
 
         benc_state_write_format(bs, 12, "%d:", size);
         benc_state_write_buffer(bs, buff, size);
-    } else if (PyInt_Check(obj) || PyLong_Check(obj)) {
+    } else if (PyInt_CheckExact(obj) || PyLong_CheckExact(obj)) {
         long x = PyLong_AsLong(obj);
         benc_state_write_format(bs, 20, "i%lde", x);
         /*
@@ -222,9 +216,6 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
         benc_state_write_buffer(bs, buff, size);
         benc_state_write_char(bs, 'e');
         */
-    } else if (PyFloat_Check(obj)) {
-        double real_val = PyFloat_AS_DOUBLE(obj);
-        printf("REAL (%G)\n", real_val);
     } else if (PyList_CheckExact(obj)) {
         n = PyList_GET_SIZE(obj);
         benc_state_references_push(bs, obj);
@@ -328,18 +319,6 @@ static PyObject *do_load(struct benc_state *bs) {
     int first = benc_state_read_char(bs);
 
     switch (first) {
-        case 'n':
-            Py_INCREF(Py_None);
-            retval = Py_None;
-            break;
-        case 'f':
-            Py_INCREF(Py_False);
-            retval = Py_False;
-            break;
-        case 't':
-            Py_INCREF(Py_True);
-            retval = Py_True;
-            break;
         case 'i': {
             int sign = 1;
             int read_cnt = 0;

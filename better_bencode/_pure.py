@@ -29,9 +29,7 @@ def _dump_implementation(obj, write, path):
     if id(obj) in path:
         raise ValueError('circular reference detected')
 
-    if obj is None or obj is False or obj is True:
-        write({None: b'n', False: b'f', True: b't'}[obj])
-    elif t in integer_types:
+    if t in integer_types:
         #write('i%de' % obj)
         write(b'i')
         write(int_to_binary(obj))
@@ -90,16 +88,12 @@ def read_until(delimiter, read):
 
 
 def _load_implementation(read):
-    special = {b'n': None, b'f': False, b't': True}
-
     first = read(1)
     # if not first:
     #         raise ValueError('unexpected end of data (cmd)')
 
     if first == b'e':
         return StopIteration
-    elif first in special:
-        return special[first]
     elif first == b'i':
         value = b''
         ch = read(1)

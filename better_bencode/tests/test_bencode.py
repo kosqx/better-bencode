@@ -41,11 +41,6 @@ TEST_DATA = [
     (b'd3:bar4:spam3:fooi42ee', {b'bar': b'spam', b'foo': 42}),
     (b'd1:ai1e1:bi2e1:ci3ee', {b'a': 1, b'b': 2, b'c': 3}),
     (b'd1:a1:be', {b'a': b'b'}),
-
-    # extra types
-    (b'n', None),
-    (b'f', False),
-    (b't', True),
 ]
 TESTS = [
     (module,) + test
@@ -90,7 +85,11 @@ def test_import_fast():
 TESTS_TYPEERROR = [
     (module,  test)
     for module in MODULES
-    for test in [u'', (), set(), frozenset(), len, TypeError]
+    for test in [
+        u'', (), set(), frozenset(),
+        len, TypeError,
+        True, False, None, 1.0,
+    ]
 ]
 
 
