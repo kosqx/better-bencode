@@ -208,14 +208,6 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
     } else if (PyInt_CheckExact(obj) || PyLong_CheckExact(obj)) {
         long x = PyLong_AsLong(obj);
         benc_state_write_format(bs, 20, "i%lde", x);
-        /*
-        PyObject *encoded = PyObject_Str(obj);
-        char *buff = PyBytes_AS_STRING(encoded);
-        int size = PyBytes_GET_SIZE(encoded);
-        benc_state_write_char(bs, 'i');
-        benc_state_write_buffer(bs, buff, size);
-        benc_state_write_char(bs, 'e');
-        */
     } else if (PyList_CheckExact(obj)) {
         n = PyList_GET_SIZE(obj);
         benc_state_references_push(bs, obj);
@@ -226,35 +218,23 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
         benc_state_write_char(bs, 'e');
         benc_state_references_pop(bs);
     } else if (PyDict_CheckExact(obj)) {
-        if (1) {
-            Py_ssize_t index = 0;
-            PyObject *keys, *key, *value;
-            keys = PyDict_Keys(obj);
-            PyList_Sort(keys);
+        Py_ssize_t index = 0;
+        PyObject *keys, *key, *value;
+        keys = PyDict_Keys(obj);
+        PyList_Sort(keys);
 
-            benc_state_references_push(bs, obj);
-            benc_state_write_char(bs, 'd');
-            for (index = 0; index < PyList_Size(keys); index++) {
-                key = PyList_GetItem(keys, index);
-                value = PyDict_GetItem(obj, key);
-                do_dump(bs, key);
-                do_dump(bs, value);
-            }
-            benc_state_write_char(bs, 'e');
-            benc_state_references_pop(bs);
-
-            Py_DECREF(keys);
-        } else {
-            Py_ssize_t pos = 0;
-            PyObject *key, *value;
-
-            benc_state_write_char(bs, 'd');
-            while (PyDict_Next(obj, &pos, &key, &value)) {
-                do_dump(bs, key);
-                do_dump(bs, value);
-            }
-            benc_state_write_char(bs, 'e');
+        benc_state_references_push(bs, obj);
+        benc_state_write_char(bs, 'd');
+        for (index = 0; index < PyList_Size(keys); index++) {
+            key = PyList_GetItem(keys, index);
+            value = PyDict_GetItem(obj, key);
+            do_dump(bs, key);
+            do_dump(bs, value);
         }
+        benc_state_write_char(bs, 'e');
+        benc_state_references_pop(bs);
+
+        Py_DECREF(keys);
     } else {
         PyErr_Format(
             PyExc_TypeError,
@@ -431,13 +411,7 @@ static PyObject *do_load(struct benc_state *bs) {
             } break;
         case 'd': {
             PyObject *v = PyDict_New();
-            
 
-            // R_REF(v);
-            // if (v == NULL) {
-            //  retval = NULL;
-            //  break;
-            // }
             while (1) {
                 PyObject *key, *val;
                 key = val = NULL;
@@ -520,10 +494,10 @@ static PyObject* loads(PyObject* self, PyObject* args) {
 
 
 static PyMethodDef better_bencode_fastMethods[] = {
-    {"load", load, METH_VARARGS, "load"},
-    {"loads", loads, METH_VARARGS, "loads"},
-    {"dump", dump, METH_VARARGS, "Write the value on the open file."},
-    {"dumps", dumps, METH_VARARGS, "Return string with value"},
+    {"load", load, METH_VARARGS, "Deserialize ``fp`` to a Python object."},
+    {"loads", loads, METH_VARARGS, "Deserialize ``s`` to a Python object."},
+    {"dump", dump, METH_VARARGS, "Serialize ``obj`` as a Bencode formatted stream to ``fp``."},
+    {"dumps", dumps, METH_VARARGS, "Serialize ``obj`` to a Bencode formatted ``str``."},
     {NULL, NULL, 0, NULL}
 };
 

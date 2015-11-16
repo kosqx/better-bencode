@@ -191,3 +191,27 @@ def test_loads_valueerror(module, binary, msg):
     with pytest.raises(ValueError) as excinfo:
         module.loads(binary)
     assert str(excinfo.value) == msg
+
+
+#####################################################################
+# docstrings
+
+
+@pytest.mark.parametrize('module', MODULES)
+def test_docstrings_dump(module):
+    assert module.dump.__doc__ == "Serialize ``obj`` as a Bencode formatted stream to ``fp``."
+
+
+@pytest.mark.parametrize('module', MODULES)
+def test_docstrings_dumps(module):
+    assert module.dumps.__doc__ == "Serialize ``obj`` to a Bencode formatted ``str``."
+
+
+@pytest.mark.parametrize('module', MODULES)
+def test_docstrings_load(module):
+    assert module.load.__doc__ == "Deserialize ``fp`` to a Python object."
+
+
+@pytest.mark.parametrize('module', MODULES)
+def test_docstrings_loads(module):
+    assert module.loads.__doc__ == "Deserialize ``s`` to a Python object."

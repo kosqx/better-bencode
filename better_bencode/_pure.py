@@ -2,6 +2,12 @@
 # -*- coding: utf-8 -*-
 
 
+"""
+Pure Python implementation of Bencode serialization format.
+To be used when fast C Extension cannot be compiled.
+"""
+
+
 import sys
 
 
@@ -15,26 +21,28 @@ else:
 
 
 if sys.version_info[0] == 2:
-    integer_types = (int, long)
-    binary_type = str
+    INTEGER_TYPES = (int, long)
+    BINARY_TYPES = (str, )
     int_to_binary = lambda val: str(val)
 else:
-    integer_types = (int,)
-    binary_type = bytes
+    INTEGER_TYPES = (int,)
+    BINARY_TYPES = (bytes, )
     int_to_binary = lambda val: bytes(str(val), 'ascii')
 
+
 def _dump_implementation(obj, write, path):
+    """ dump()/dumps() implementation """
+
     t = type(obj)
 
     if id(obj) in path:
         raise ValueError('circular reference detected')
 
-    if t in integer_types:
-        #write('i%de' % obj)
+    if t in INTEGER_TYPES:
         write(b'i')
         write(int_to_binary(obj))
         write(b'e')
-    elif t is binary_type:
+    elif t in BINARY_TYPES:
         write(int_to_binary(len(obj)))
         write(b':')
         write(obj)
@@ -45,16 +53,9 @@ def _dump_implementation(obj, write, path):
         write(b'e')
     elif t is dict:
         write(b'd')
-        # for key in sorted(obj.keys()):
-        #         # if not isinstance(key, str):
-        #         #         raise ValueError, 'dictionary key must be a str, %r is not' % key
-        #         _dump_implementation(key, write)
-        #         _dump_implementation(obj[key], write)
 
         data = sorted(obj.items())
         for key, val in data:
-            # if not isinstance(key, str):
-            #         raise ValueError, 'dictionary key must be a str, %r is not' % key
             _dump_implementation(key, write, path + [id(obj)])
             _dump_implementation(val, write, path + [id(obj)])
         write(b'e')
@@ -65,16 +66,22 @@ def _dump_implementation(obj, write, path):
 
 
 def dump(obj, fp):
+    """Serialize ``obj`` as a Bencode formatted stream to ``fp``."""
+
     _dump_implementation(obj, fp.write, [])
 
 
 def dumps(obj):
+    """Serialize ``obj`` to a Bencode formatted ``str``."""
+
     fp = []
     _dump_implementation(obj, fp.append, [])
     return b''.join(fp)
 
 
-def read_until(delimiter, read):
+def _read_until(delimiter, read):
+    """ Read char by char until ``delimiter`` occurs. """
+
     result = b''
     ch = read(1)
     if not ch:
@@ -88,9 +95,9 @@ def read_until(delimiter, read):
 
 
 def _load_implementation(read):
+    """ load()/loads() implementation """
+
     first = read(1)
-    # if not first:
-    #         raise ValueError('unexpected end of data (cmd)')
 
     if first == b'e':
         return StopIteration
@@ -106,7 +113,6 @@ def _load_implementation(read):
             raise ValueError('unexpected byte 0x%.2x' % ord(ch))
         return int(value)
     elif b'0' <= first <= b'9':
-        #size = int(first + read_until(b':', read))
         size = 0
         while b'0' <= first <= b'9':
             size = size * 10 + (ord(first) - ord('0'))
@@ -129,9 +135,6 @@ def _load_implementation(read):
     elif first == b'd':
         result = {}
         while True:
-            # key = _load_implementation(read)
-            # if key is StopIteration:
-            #         return result
             this = read(1)
             if this == b'e':
                 return result
@@ -139,7 +142,7 @@ def _load_implementation(read):
                 raise ValueError('unexpected end of data')
             elif not this.isdigit():
                 raise ValueError('unexpected byte 0x%.2x' % ord(this))
-            size = int(this + read_until(b':', read))
+            size = int(this + _read_until(b':', read))
             key = read(size)
             val = _load_implementation(read)
             result[key] = val
@@ -149,10 +152,14 @@ def _load_implementation(read):
         raise ValueError('unexpected byte 0x%.2x' % ord(first))
 
 
-def load(fd):
-    return _load_implementation(fd.read)
+def load(fp):
+    """Deserialize ``fp`` to a Python object."""
+
+    return _load_implementation(fp.read)
 
 
 def loads(data):
+    """Deserialize ``s`` to a Python object."""
+
     fp = StringIO(data)
     return _load_implementation(fp.read)
