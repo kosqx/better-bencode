@@ -3,14 +3,21 @@ Better Bencode
 ==============
 
 :author: Krzysztof Kosyl
-:version: 0.1.0
-:date: 2015-04-20
-
-Still alpha!
+:version: 0.2.0
+:date: 2015-11-29
 
 
-Install
--------
+Why use ``better_bencode``?
+---------------------------
+
+* standard Python object serialization functions: ``load()``, ``loads()``, ``dump()``, ``dumps()``
+* works with Python 2.6, 2.7, 3.3, 3.4 and PyPy
+* 4.5 times faster than ``bencode`` module, thanks to C Extension
+* well tested
+
+
+Installation
+------------
 
 ::
 

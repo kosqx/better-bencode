@@ -26,19 +26,19 @@ else:
 
 setup(
     name='better-bencode',
-    version='0.1',
+    version='0.2.0',
     url='https://github.com/kosqx/better-bencode',
     license='BSD',
     author='Krzysztof Kosyl',
     install_requires=[],
     author_email='krzysztof.kosyl@gmail.com',
-    description='Bencode implemented as Python C Extension',
+    description='Fast, standard compliant Bencode serialization',
     long_description=read('README.rst'),
     packages=['better_bencode'],
     include_package_data=True,
     platforms='any',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
