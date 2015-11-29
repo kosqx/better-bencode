@@ -30,13 +30,21 @@ else:
     int_to_binary = lambda val: bytes(str(val), 'ascii')
 
 
+class BencodeValueError(ValueError):
+    pass
+
+
+class BencodeTypeError(TypeError):
+    pass
+
+
 def _dump_implementation(obj, write, path):
     """ dump()/dumps() implementation """
 
     t = type(obj)
 
     if id(obj) in path:
-        raise ValueError('circular reference detected')
+        raise BencodeValueError('circular reference detected')
 
     if t in INTEGER_TYPES:
         write(b'i')
@@ -60,7 +68,7 @@ def _dump_implementation(obj, write, path):
             _dump_implementation(val, write, path + [id(obj)])
         write(b'e')
     else:
-        raise TypeError(
+        raise BencodeTypeError(
             'type %s is not Bencode serializable' % type(obj).__name__
         )
 
@@ -85,12 +93,12 @@ def _read_until(delimiter, read):
     result = b''
     ch = read(1)
     if not ch:
-        raise ValueError('unexpected end of data')
+        raise BencodeValueError('unexpected end of data')
     while ch != delimiter:
         result += ch
         ch = read(1)
         if not ch:
-            raise ValueError('unexpected end of data')
+            raise BencodeValueError('unexpected end of data')
     return result
 
 
@@ -108,9 +116,9 @@ def _load_implementation(read):
             value += ch
             ch = read(1)
         if ch == b'' or (ch == b'e' and value in (b'', b'-')):
-            raise ValueError('unexpected end of data')
+            raise BencodeValueError('unexpected end of data')
         if ch != b'e':
-            raise ValueError('unexpected byte 0x%.2x' % ord(ch))
+            raise BencodeValueError('unexpected byte 0x%.2x' % ord(ch))
         return int(value)
     elif b'0' <= first <= b'9':
         size = 0
@@ -118,12 +126,12 @@ def _load_implementation(read):
             size = size * 10 + (ord(first) - ord('0'))
             first = read(1)
             if first == b'':
-                raise ValueError('unexpected end of data')
+                raise BencodeValueError('unexpected end of data')
         if first != b':':
-            raise ValueError('unexpected byte 0x%.2x' % ord(first))
+            raise BencodeValueError('unexpected byte 0x%.2x' % ord(first))
         data = read(size)
         if len(data) != size:
-            raise ValueError('unexpected end of data')
+            raise BencodeValueError('unexpected end of data')
         return data
     elif first == b'l':
         result = []
@@ -139,17 +147,17 @@ def _load_implementation(read):
             if this == b'e':
                 return result
             elif this == b'':
-                raise ValueError('unexpected end of data')
+                raise BencodeValueError('unexpected end of data')
             elif not this.isdigit():
-                raise ValueError('unexpected byte 0x%.2x' % ord(this))
+                raise BencodeValueError('unexpected byte 0x%.2x' % ord(this))
             size = int(this + _read_until(b':', read))
             key = read(size)
             val = _load_implementation(read)
             result[key] = val
     elif first == b'':
-        raise ValueError('unexpected end of data')
+        raise BencodeValueError('unexpected end of data')
     else:
-        raise ValueError('unexpected byte 0x%.2x' % ord(first))
+        raise BencodeValueError('unexpected byte 0x%.2x' % ord(first))
 
 
 def load(fp):

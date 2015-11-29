@@ -38,6 +38,18 @@ except ImportError as e:
 MODULES = [module for module in [auto, fast, pure] if module is not None]
 
 
+@pytest.mark.parametrize('module', MODULES)
+def test_error_load(module):
+    assert hasattr(module, 'BencodeValueError')
+    assert issubclass(module.BencodeValueError, ValueError)
+
+
+@pytest.mark.parametrize('module', MODULES)
+def test_error_dump(module):
+    assert hasattr(module, 'BencodeTypeError')
+    assert issubclass(module.BencodeTypeError, TypeError)
+
+
 TEST_DATA = [
     (b'de', {}),
     (b'le', []),
@@ -114,11 +126,25 @@ def test_dump_typeerror(module, struct):
 
 
 @pytest.mark.parametrize(('module', 'struct'), TESTS_TYPEERROR)
+def test_dump_dumperror(module, struct):
+    with pytest.raises(module.BencodeTypeError) as excinfo:
+        fp = StringIO()
+        module.dump(struct, fp)
+    assert type(struct).__name__ in str(excinfo.value)
+
+
+@pytest.mark.parametrize(('module', 'struct'), TESTS_TYPEERROR)
 def test_dumps_typeerror(module, struct):
     with pytest.raises(TypeError) as excinfo:
         module.dumps(struct)
     assert type(struct).__name__ in str(excinfo.value)
 
+
+@pytest.mark.parametrize(('module', 'struct'), TESTS_TYPEERROR)
+def test_dumps_dumperror(module, struct):
+    with pytest.raises(module.BencodeTypeError) as excinfo:
+        module.dumps(struct)
+    assert type(struct).__name__ in str(excinfo.value)
 
 
 

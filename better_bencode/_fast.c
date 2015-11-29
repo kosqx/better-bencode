@@ -24,6 +24,10 @@ struct benc_state {
 };
 
 
+PyObject* BencodeValueError;
+PyObject* BencodeTypeError;
+
+
 static void benc_state_init(struct benc_state* bs) {
     bs->size = 256;
     bs->offset = 0;
@@ -141,7 +145,7 @@ static PyObject *benc_state_read_pystring(struct benc_state* bs, int size) {
             return result;
         } else {
             PyErr_Format(
-                PyExc_ValueError,
+                BencodeValueError,
                 "unexpected end of data"
             );
             return NULL;
@@ -153,7 +157,7 @@ static PyObject *benc_state_read_pystring(struct benc_state* bs, int size) {
         } else {
             Py_DECREF(result);
             PyErr_Format(
-                PyExc_ValueError,
+                BencodeValueError,
                 "unexpected end of data"
             );
             return NULL;
@@ -194,7 +198,7 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
 
     if (benc_state_references_contains(bs, obj)) {
         PyErr_Format(
-            PyExc_ValueError,
+            BencodeValueError,
             "circular reference detected"
         );
         return 0;
@@ -238,7 +242,7 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
         Py_DECREF(keys);
     } else {
         PyErr_Format(
-            PyExc_TypeError,
+            BencodeTypeError,
             "type %s is not Bencode serializable",
             Py_TYPE(obj)->tp_name
         );
@@ -321,20 +325,20 @@ static PyObject *do_load(struct benc_state *bs) {
                     retval = PyLong_FromLongLong(value);
                 } else {
                     PyErr_Format(
-                        PyExc_ValueError,
+                        BencodeValueError,
                         "unexpected end of data"
                     );
                     retval = NULL;
                 }
             } else if (-1 == current) {
                 PyErr_Format(
-                    PyExc_ValueError,
+                    BencodeValueError,
                     "unexpected end of data"
                 );
                 retval = NULL;
             } else {
                 PyErr_Format(
-                    PyExc_ValueError,
+                    BencodeValueError,
                     "unexpected byte 0x%.2x",
                     current
                 );
@@ -363,13 +367,13 @@ static PyObject *do_load(struct benc_state *bs) {
                 retval = benc_state_read_pystring(bs, size);
             } else if (-1 == current) {
                 PyErr_Format(
-                    PyExc_ValueError,
+                    BencodeValueError,
                     "unexpected end of data"
                 );
                 retval = NULL;
             } else {
                 PyErr_Format(
-                    PyExc_ValueError,
+                    BencodeValueError,
                     "unexpected byte 0x%.2x",
                     current
                 );
@@ -396,7 +400,7 @@ static PyObject *do_load(struct benc_state *bs) {
                 if (item == NULL) {
                     if (!PyErr_Occurred()) {
                         PyErr_SetString(
-                            PyExc_TypeError,
+                            BencodeTypeError,
                             "unexpected error in list"
                         );
                     }
@@ -425,7 +429,7 @@ static PyObject *do_load(struct benc_state *bs) {
 
                 if (key == NULL) {
                     if (!PyErr_Occurred()) {
-                        PyErr_SetString(PyExc_TypeError, "unexpected error in dict");
+                        PyErr_SetString(BencodeTypeError, "unexpected error in dict");
                     }
                     break;
                 }
@@ -435,7 +439,7 @@ static PyObject *do_load(struct benc_state *bs) {
                     PyDict_SetItem(v, key, val);
                 } else {
                     if (!PyErr_Occurred()) {
-                        PyErr_SetString(PyExc_TypeError, "unexpected error in dict");
+                        PyErr_SetString(BencodeTypeError, "unexpected error in dict");
                     }
                     break;
                 }
@@ -450,14 +454,14 @@ static PyObject *do_load(struct benc_state *bs) {
             } break;
         case -1: {
             PyErr_Format(
-                PyExc_ValueError,
+                BencodeValueError,
                 "unexpected end of data"
             );
             retval = NULL;
             } break;
         default:
             PyErr_Format(
-                PyExc_ValueError,
+                BencodeValueError,
                 "unexpected byte 0x%.2x",
                 first
             );
@@ -494,6 +498,23 @@ static PyObject* loads(PyObject* self, PyObject* args) {
 }
 
 
+static PyObject *add_errors(PyObject *module) {
+    BencodeValueError = PyErr_NewException(
+        "better_bencode._fast.BencodeValueError", PyExc_ValueError, NULL
+    );
+    Py_INCREF(BencodeValueError);
+    PyModule_AddObject(module, "BencodeValueError", BencodeValueError);
+
+    BencodeTypeError = PyErr_NewException(
+        "better_bencode._fast.BencodeTypeError", PyExc_TypeError, NULL
+    );
+    Py_INCREF(BencodeTypeError);
+    PyModule_AddObject(module, "BencodeTypeError", BencodeTypeError);
+
+    return module;
+}
+
+
 static PyMethodDef better_bencode_fastMethods[] = {
     {"load", load, METH_VARARGS, "Deserialize ``fp`` to a Python object."},
     {"loads", loads, METH_VARARGS, "Deserialize ``s`` to a Python object."},
@@ -505,7 +526,7 @@ static PyMethodDef better_bencode_fastMethods[] = {
 
 
 #if PY_MAJOR_VERSION >= 3
-static struct PyModuleDef spammodule = {
+static struct PyModuleDef better_bencode_fast_module = {
     PyModuleDef_HEAD_INIT,
     "better_bencode._fast",
     NULL,
@@ -519,11 +540,14 @@ static struct PyModuleDef spammodule = {
 
 PyMODINIT_FUNC
 PyInit__fast(void) {
-    return PyModule_Create(&spammodule);
+    PyObject *module = PyModule_Create(&better_bencode_fast_module);
+    return add_errors(module);
+
 }
 #else
 PyMODINIT_FUNC
 init_fast(void) {
-    (void) Py_InitModule("better_bencode._fast", better_bencode_fastMethods);
+    PyObject *module = Py_InitModule("better_bencode._fast", better_bencode_fastMethods);
+    (void) add_errors(module);
 }
 #endif
