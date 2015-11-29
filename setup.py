@@ -30,15 +30,13 @@ setup(
     url='https://github.com/kosqx/better-bencode',
     license='BSD',
     author='Krzysztof Kosyl',
-    tests_require=['pytest'],
     install_requires=[],
     author_email='krzysztof.kosyl@gmail.com',
     description='Bencode implemented as Python C Extension',
     long_description=read('README.rst'),
-    packages=['better_bencode', 'better_bencode.tests'],
+    packages=['better_bencode'],
     include_package_data=True,
     platforms='any',
-    test_suite='better_bencode.tests.test_bencode',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -55,8 +53,5 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
     ],
-    extras_require={
-        'testing': ['pytest'],
-    },
     ext_modules=ext_modules,
 )

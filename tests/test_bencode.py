@@ -3,6 +3,15 @@
 
 
 import sys
+import os.path
+
+
+# remove top repository dir to avoid importing local code
+sys.path = [
+    directory
+    for directory in sys.path
+    if not os.path.exists(os.path.join(directory, 'README.rst'))
+]
 
 
 if sys.version_info[0] == 2:
