@@ -56,12 +56,12 @@ static void benc_state_flush(struct benc_state* bs) {
 
 static void benc_state_write_char(struct benc_state* bs, char c) {
     if (bs->file == NULL) {
-        if (bs->offset + 1 >= bs->size) {
+        if ((bs->offset + 1) >= bs->size) {
             bs->buffer = realloc(bs->buffer, bs->size * 2);
         }
         bs->buffer[bs->offset++] = c;
     } else {
-        if (bs->offset + 1 >= bs->size) {
+        if ((bs->offset + 1) >= bs->size) {
             PyObject_CallMethod(bs->file, "write", PY_BUILD_VALUE_BYTES, bs->buffer, bs->offset);
             bs->offset = 0;
         }
@@ -73,9 +73,10 @@ static void benc_state_write_char(struct benc_state* bs, char c) {
 static void benc_state_write_buffer(struct benc_state* bs, char* buff, int size) {
     if (bs->file == NULL) {
         int new_size;
-        for (new_size = bs->size; new_size <= bs->offset + size; new_size *= 2);
+        for (new_size = bs->size; new_size <= (bs->offset + size); new_size *= 2);
         if (new_size > bs->size) {
             bs->buffer = realloc(bs->buffer, new_size);
+            bs->size = new_size;
         }
         memcpy(bs->buffer + bs->offset, buff, size);
         bs->offset += size;
