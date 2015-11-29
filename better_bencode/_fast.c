@@ -208,7 +208,7 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
         benc_state_write_buffer(bs, buff, size);
     } else if (PyInt_CheckExact(obj) || PyLong_CheckExact(obj)) {
         long x = PyLong_AsLong(obj);
-        benc_state_write_format(bs, 20, "i%lde", x);
+        benc_state_write_format(bs, 23, "i%lde", x);
     } else if (PyList_CheckExact(obj)) {
         n = PyList_GET_SIZE(obj);
         benc_state_references_push(bs, obj);
