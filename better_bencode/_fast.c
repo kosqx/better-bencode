@@ -507,19 +507,23 @@ static PyMethodDef better_bencode_fastMethods[] = {
 #if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef spammodule = {
     PyModuleDef_HEAD_INIT,
-    "better_bencode_fast",
+    "better_bencode._fast",
     NULL,
     -1,
-    better_bencode_fastMethods
+    better_bencode_fastMethods,
+    NULL,
+    NULL,
+    NULL,
+    NULL
 };
 
 PyMODINIT_FUNC
-PyInit_better_bencode_fast(void) {
+PyInit__fast(void) {
     return PyModule_Create(&spammodule);
 }
 #else
 PyMODINIT_FUNC
-initbetter_bencode_fast(void) {
-    (void) Py_InitModule("better_bencode_fast", better_bencode_fastMethods);
+init_fast(void) {
+    (void) Py_InitModule("better_bencode._fast", better_bencode_fastMethods);
 }
 #endif

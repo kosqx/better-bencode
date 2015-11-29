@@ -20,7 +20,7 @@ if hasattr(sys, 'pypy_version_info'):
     ext_modules = []
 else:
     ext_modules = [
-        Extension('better_bencode_fast', sources=['better_bencode/_fast.c']),
+        Extension('better_bencode._fast', sources=['better_bencode/_fast.c']),
     ]
 
 

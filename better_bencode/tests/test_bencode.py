@@ -20,8 +20,9 @@ import pytest
 import better_bencode._pure as pure
 import better_bencode as auto
 try:
-    import better_bencode_fast as fast
-except ImportError:
+    import better_bencode._fast as fast
+except ImportError as e:
+    print(e)
     fast = None
 
 
@@ -75,7 +76,7 @@ def test_dump(module, binary, struct):
 def test_import_fast():
     if hasattr(sys, 'pypy_version_info'):
         return
-    import better_bencode_fast
+    import better_bencode._fast
 
 
 #####################################################################
