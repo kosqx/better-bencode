@@ -13,6 +13,8 @@
 
 
 struct benc_state {
+    unsigned int cast : 1;
+
     int size;
     int offset;
     char* buffer;
@@ -213,12 +215,24 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
     } else if (PyInt_CheckExact(obj) || PyLong_CheckExact(obj)) {
         long x = PyLong_AsLong(obj);
         benc_state_write_format(bs, 23, "i%lde", x);
-    } else if (PyList_CheckExact(obj)) {
+    } else if (bs->cast && PyBool_Check(obj)) {
+        long x = PyLong_AsLong(obj);
+        benc_state_write_format(bs, 4, "i%lde", x);
+    } else if (PyList_CheckExact(obj) || (bs->cast && PyList_Check(obj))) {
         n = PyList_GET_SIZE(obj);
         benc_state_references_push(bs, obj);
         benc_state_write_char(bs, 'l');
         for (i = 0; i < n; i++) {
             do_dump(bs, PyList_GET_ITEM(obj, i));
+        }
+        benc_state_write_char(bs, 'e');
+        benc_state_references_pop(bs);
+    } else if (bs->cast && PyTuple_Check(obj)) {
+        n = PyTuple_GET_SIZE(obj);
+        benc_state_references_push(bs, obj);
+        benc_state_write_char(bs, 'l');
+        for (i = 0; i < n; i++) {
+            do_dump(bs, PyTuple_GET_ITEM(obj, i));
         }
         benc_state_write_char(bs, 'e');
         benc_state_references_pop(bs);
@@ -250,17 +264,26 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
     return 0;
 }
 
-static PyObject* dump(PyObject* self, PyObject* args) {
+static PyObject* dump(PyObject* self, PyObject* args, PyObject* kwargs) {
+    static char *kwlist[] = {"obj", "write", "cast", NULL};
+
     PyObject* obj;
     PyObject* write;
+    int cast = 0;
 
     struct benc_state bs;
     benc_state_init(&bs);
 
-    if (!PyArg_ParseTuple(args, "OO", &obj, &write))
+    if (!PyArg_ParseTupleAndKeywords(
+        args, kwargs, "OO|i", kwlist,
+        &obj, &write, &cast
+    ))
+    {
         return NULL;
+    }
 
     bs.file = write;
+    bs.cast = !!cast;
     
     do_dump(&bs, obj);
 
@@ -275,15 +298,25 @@ static PyObject* dump(PyObject* self, PyObject* args) {
 }
 
 
-static PyObject* dumps(PyObject* self, PyObject* args) {
+static PyObject* dumps(PyObject* self, PyObject* args, PyObject* kwargs) {
+    static char *kwlist[] = {"obj", "cast", NULL};
+
     PyObject* obj;
     PyObject* result;
+    int cast = 0;
 
     struct benc_state bs;
     benc_state_init(&bs);
 
-    if (!PyArg_ParseTuple(args, "O", &obj))
+    if (!PyArg_ParseTupleAndKeywords(
+        args, kwargs, "O|i", kwlist,
+        &obj, &cast
+    ))
+    {
         return NULL;
+    }
+
+    bs.cast = !!cast;
 
     do_dump(&bs, obj);
 
@@ -518,8 +551,8 @@ static PyObject *add_errors(PyObject *module) {
 static PyMethodDef better_bencode_fastMethods[] = {
     {"load", load, METH_VARARGS, "Deserialize ``fp`` to a Python object."},
     {"loads", loads, METH_VARARGS, "Deserialize ``s`` to a Python object."},
-    {"dump", dump, METH_VARARGS, "Serialize ``obj`` as a Bencode formatted stream to ``fp``."},
-    {"dumps", dumps, METH_VARARGS, "Serialize ``obj`` to a Bencode formatted ``str``."},
+    {"dump", dump, METH_VARARGS|METH_KEYWORDS, "Serialize ``obj`` as a Bencode formatted stream to ``fp``."},
+    {"dumps", dumps, METH_VARARGS|METH_KEYWORDS, "Serialize ``obj`` to a Bencode formatted ``str``."},
     {NULL, NULL, 0, NULL}
 };
 

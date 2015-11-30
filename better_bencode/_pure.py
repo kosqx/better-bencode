@@ -38,7 +38,7 @@ class BencodeTypeError(TypeError):
     pass
 
 
-def _dump_implementation(obj, write, path):
+def _dump_implementation(obj, write, path, cast):
     """ dump()/dumps() implementation """
 
     t = type(obj)
@@ -54,18 +54,22 @@ def _dump_implementation(obj, write, path):
         write(int_to_binary(len(obj)))
         write(b':')
         write(obj)
-    elif t is list:
+    elif t is list or (cast and issubclass(t, (list, tuple))):
         write(b'l')
         for item in obj:
-            _dump_implementation(item, write, path + [id(obj)])
+            _dump_implementation(item, write, path + [id(obj)], cast)
         write(b'e')
     elif t is dict:
         write(b'd')
 
         data = sorted(obj.items())
         for key, val in data:
-            _dump_implementation(key, write, path + [id(obj)])
-            _dump_implementation(val, write, path + [id(obj)])
+            _dump_implementation(key, write, path + [id(obj)], cast)
+            _dump_implementation(val, write, path + [id(obj)], cast)
+        write(b'e')
+    elif cast and t is bool:
+        write(b'i')
+        write(int_to_binary(int(obj)))
         write(b'e')
     else:
         raise BencodeTypeError(
@@ -73,17 +77,17 @@ def _dump_implementation(obj, write, path):
         )
 
 
-def dump(obj, fp):
+def dump(obj, fp, cast=False):
     """Serialize ``obj`` as a Bencode formatted stream to ``fp``."""
 
-    _dump_implementation(obj, fp.write, [])
+    _dump_implementation(obj, fp.write, [], cast)
 
 
-def dumps(obj):
+def dumps(obj, cast=False):
     """Serialize ``obj`` to a Bencode formatted ``str``."""
 
     fp = []
-    _dump_implementation(obj, fp.append, [])
+    _dump_implementation(obj, fp.append, [], cast)
     return b''.join(fp)
 
 

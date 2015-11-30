@@ -253,3 +253,46 @@ def test_docstrings_load(module):
 @pytest.mark.parametrize('module', MODULES)
 def test_docstrings_loads(module):
     assert module.loads.__doc__ == "Deserialize ``s`` to a Python object."
+
+
+#####################################################################
+# cast
+
+
+from collections import namedtuple
+Point = namedtuple('Point', 'x y')
+
+
+class MyList(list):
+    def __init__(self, *data):
+        list.__init__(self, data)
+
+
+CAST_TEST_DATA = [
+    (False, b'i0e', 0),
+    (True,  b'i1e', 1),
+
+    ((),  b'le', []),
+    ((1,),  b'li1ee', [1]),
+
+    (Point(-1, 1),  b'li-1ei1ee', [-1, 1]),
+    (MyList(-1, 1),  b'li-1ei1ee', [-1, 1]),
+
+]
+CAST_TESTS = [
+    (module,) + test
+    for module in MODULES
+    for test in CAST_TEST_DATA
+]
+
+@pytest.mark.parametrize(('module', 'indata', 'binary', 'outdata'), CAST_TESTS)
+def test_cast_dumps_ok(module, indata, binary, outdata):
+    dumped = module.dumps(indata, cast=True)
+    assert dumped == binary
+    assert module.loads(dumped) == outdata
+
+
+@pytest.mark.parametrize(('module', 'indata', 'binary', 'outdata'), CAST_TESTS)
+def test_cast_dumps_error(module, indata, binary, outdata):
+    with pytest.raises(TypeError) as excinfo:
+        module.dumps(indata)
