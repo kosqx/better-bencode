@@ -96,12 +96,6 @@ def test_dump(module, binary, struct):
     assert fp.getvalue() == binary
 
 
-def test_import_fast():
-    if hasattr(sys, 'pypy_version_info'):
-        return
-    import better_bencode._fast
-
-
 #####################################################################
 # dump TypeError tests
 
