@@ -11,7 +11,7 @@ Why use ``better_bencode``?
 ---------------------------
 
 * standard Python object serialization functions: ``load()``, ``loads()``, ``dump()``, ``dumps()``
-* works with Python 2.6, 2.7, 3.3, 3.4 and PyPy
+* works with Python 2.6, 2.7, 3.3, 3.4, 3.5 and PyPy
 * 4.5 times faster than ``bencode`` module, thanks to C Extension
 * well tested
 
