@@ -443,6 +443,7 @@ static PyObject *do_load(struct benc_state *bs) {
                 }
 
                 PyList_Append(v, item);
+                Py_DECREF(item);
             }
 
             retval = v;
