@@ -3,8 +3,8 @@ Better Bencode
 ==============
 
 :author: Krzysztof Kosyl
-:version: 0.2.0
-:date: 2015-11-29
+:version: 0.2.1
+:date: 2016-05-12
 
 
 Why use ``better_bencode``?

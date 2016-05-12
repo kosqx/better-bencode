@@ -52,7 +52,7 @@ def run_setup(with_binary):
 
     setup(
         name='better-bencode',
-        version='0.2.0',
+        version='0.2.1',
         url='https://github.com/kosqx/better-bencode',
         license='BSD',
         author='Krzysztof Kosyl',
