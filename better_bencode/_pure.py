@@ -24,10 +24,12 @@ if sys.version_info[0] == 2:
     INTEGER_TYPES = (int, long)
     BINARY_TYPES = (str, )
     int_to_binary = lambda val: str(val)
+    unicode_to_bytes = lambda val: bytes(val)
 else:
     INTEGER_TYPES = (int,)
     BINARY_TYPES = (bytes, )
     int_to_binary = lambda val: bytes(str(val), 'ascii')
+    unicode_to_bytes = lambda val: bytes(val, 'utf8')
 
 
 class BencodeValueError(ValueError):
@@ -59,6 +61,11 @@ def _dump_implementation(obj, write, path, cast):
         for item in obj:
             _dump_implementation(item, write, path + [id(obj)], cast)
         write(b'e')
+    elif t is bytearray:
+        _dump_implementation(bytes(obj), write, path + [id(obj)], cast)
+    elif t is unicode:
+        _dump_implementation(unicode_to_bytes(obj), write,
+                             path + [id(obj)], cast)
     elif t is dict:
         write(b'd')
 
