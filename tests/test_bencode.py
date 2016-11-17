@@ -104,7 +104,7 @@ TESTS_TYPEERROR = [
     (module,  test)
     for module in MODULES
     for test in [
-        u'', (), set(), frozenset(),
+        (), set(), frozenset(),
         len, TypeError,
         True, False, None, 1.0,
     ]
