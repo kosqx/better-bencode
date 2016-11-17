@@ -30,6 +30,7 @@ else:
     BINARY_TYPES = (bytes, )
     int_to_binary = lambda val: bytes(str(val), 'ascii')
     unicode_to_bytes = lambda val: bytes(val, 'utf8')
+    unicode = str
 
 
 class BencodeValueError(ValueError):
