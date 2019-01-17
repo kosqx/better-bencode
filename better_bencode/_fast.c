@@ -3,7 +3,7 @@
 
 #if PY_MAJOR_VERSION >= 3
 #define PY_BUILD_VALUE_BYTES "y#"
-#define PyString_FromStringAndSize PyBytes_FromStringAndSize
+#define PyString_FromStringAndSize PyUnicode_FromStringAndSize
 #define PyString_AsStringAndSize PyBytes_AsStringAndSize
 #define PyString_Size PyBytes_Size
 #define PyInt_CheckExact(obj) 0
@@ -142,9 +142,14 @@ static int benc_state_read_char(struct benc_state* bs) {
 static PyObject *benc_state_read_pystring(struct benc_state* bs, int size) {
     if (bs->file == NULL) {
         if (bs->offset + size <= bs->size) {
-            PyObject *result = PyString_FromStringAndSize(bs->buffer + bs->offset, size);
+            PyObject *decoded = PyString_FromStringAndSize(bs->buffer + bs->offset, size);
             bs->offset += size;
-            return result;
+            if (decoded == NULL) {
+                PyErr_Clear();
+                PyObject *result = PyBytes_FromStringAndSize(bs->buffer + bs->offset, size);
+                return result;
+            }
+            return decoded;
         } else {
             PyErr_Format(
                 BencodeValueError,
@@ -155,6 +160,14 @@ static PyObject *benc_state_read_pystring(struct benc_state* bs, int size) {
     } else {
         PyObject *result = PyObject_CallMethod(bs->file, "read", "i", size);
         if (PyString_Size(result) == size) {
+#if PY_MAJOR_VERSION >= 3
+            PyObject *decoded = PyUnicode_FromEncodedObject(result, "utf8", NULL);
+            if (decoded == NULL) {
+                PyErr_Clear();
+                return result;
+            }
+            return decoded;
+#endif
             return result;
         } else {
             Py_DECREF(result);
@@ -212,7 +225,23 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
 
         benc_state_write_format(bs, 12, "%d:", size);
         benc_state_write_buffer(bs, buff, size);
-    } else if (PyInt_CheckExact(obj) || PyLong_CheckExact(obj)) {
+    }
+#if PY_MAJOR_VERSION >= 3
+    else if (PyUnicode_CheckExact(obj)) {
+        if (PyUnicode_READY(obj) != 0) {
+            PyErr_Format(
+                BencodeValueError,
+                "memory allocation error"
+            );
+        }
+        PyObject *utf_bytes = PyUnicode_AsEncodedString(obj, "utf8", NULL);
+        char *buff = PyBytes_AsString(utf_bytes);
+        Py_ssize_t size = PyBytes_Size(utf_bytes);
+        benc_state_write_format(bs, 12, "%ld:", size);
+        benc_state_write_buffer(bs, buff, size);
+    }
+#endif
+    else if (PyInt_CheckExact(obj) || PyLong_CheckExact(obj)) {
         long x = PyLong_AsLong(obj);
         benc_state_write_format(bs, 23, "i%lde", x);
     } else if (bs->cast && PyBool_Check(obj)) {
@@ -284,7 +313,7 @@ static PyObject* dump(PyObject* self, PyObject* args, PyObject* kwargs) {
 
     bs.file = write;
     bs.cast = !!cast;
-    
+
     do_dump(&bs, obj);
 
     benc_state_flush(&bs);
@@ -455,7 +484,7 @@ static PyObject *do_load(struct benc_state *bs) {
                 PyObject *key, *val;
                 key = val = NULL;
                 key = do_load(bs);
-                
+
                 if (key == PyExc_StopIteration) {
                     Py_DECREF(PyExc_StopIteration);
                     break;
@@ -550,10 +579,12 @@ static PyObject *add_errors(PyObject *module) {
 
 
 static PyMethodDef better_bencode_fastMethods[] = {
-    {"load", load, METH_VARARGS, "Deserialize ``fp`` to a Python object."},
-    {"loads", loads, METH_VARARGS, "Deserialize ``s`` to a Python object."},
-    {"dump", dump, METH_VARARGS|METH_KEYWORDS, "Serialize ``obj`` as a Bencode formatted stream to ``fp``."},
-    {"dumps", dumps, METH_VARARGS|METH_KEYWORDS, "Serialize ``obj`` to a Bencode formatted ``str``."},
+    {"load", (PyCFunction)load, METH_VARARGS, "Deserialize ``fp`` to a Python object."},
+    {"loads", (PyCFunction)loads, METH_VARARGS, "Deserialize ``s`` to a Python object."},
+    {"dump", (PyCFunction)(void*)(PyCFunctionWithKeywords)dump,
+        METH_VARARGS|METH_KEYWORDS, "Serialize ``obj`` as a Bencode formatted stream to ``fp``."},
+    {"dumps", (PyCFunction)(void*)(PyCFunctionWithKeywords)dumps,
+        METH_VARARGS|METH_KEYWORDS, "Serialize ``obj`` to a Bencode formatted ``str``."},
     {NULL, NULL, 0, NULL}
 };
 

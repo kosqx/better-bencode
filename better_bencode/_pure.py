@@ -24,10 +24,16 @@ if sys.version_info[0] == 2:
     INTEGER_TYPES = (int, long)
     BINARY_TYPES = (str, )
     int_to_binary = lambda val: str(val)
+    binary_return = lambda val: val
 else:
     INTEGER_TYPES = (int,)
-    BINARY_TYPES = (bytes, )
+    BINARY_TYPES = (bytes, str)
     int_to_binary = lambda val: bytes(str(val), 'ascii')
+    def binary_return(val):
+        try:
+            return val.decode("utf")
+        except UnicodeDecodeError:
+            return val
 
 
 class BencodeValueError(ValueError):
@@ -51,9 +57,15 @@ def _dump_implementation(obj, write, path, cast):
         write(int_to_binary(obj))
         write(b'e')
     elif t in BINARY_TYPES:
-        write(int_to_binary(len(obj)))
-        write(b':')
-        write(obj)
+        if t is str and sys.version_info[0] == 3:
+            utf_bytes = obj.encode("utf8")
+            write(int_to_binary(len(utf_bytes)))
+            write(b':')
+            write(utf_bytes)
+        else:
+            write(int_to_binary(len(obj)))
+            write(b':')
+            write(obj)
     elif t is list or (cast and issubclass(t, (list, tuple))):
         write(b'l')
         for item in obj:
@@ -113,7 +125,7 @@ def _load_implementation(read):
 
     if first == b'e':
         return StopIteration
-    elif first == b'i':
+    if first == b'i':
         value = b''
         ch = read(1)
         while (b'0' <= ch <= b'9') or (ch == b'-'):
@@ -124,7 +136,7 @@ def _load_implementation(read):
         if ch != b'e':
             raise BencodeValueError('unexpected byte 0x%.2x' % ord(ch))
         return int(value)
-    elif b'0' <= first <= b'9':
+    if b'0' <= first <= b'9':
         size = 0
         while b'0' <= first <= b'9':
             size = size * 10 + (ord(first) - ord('0'))
@@ -136,8 +148,8 @@ def _load_implementation(read):
         data = read(size)
         if len(data) != size:
             raise BencodeValueError('unexpected end of data')
-        return data
-    elif first == b'l':
+        return binary_return(data)
+    if first == b'l':
         result = []
         while True:
             val = _load_implementation(read)
@@ -150,9 +162,9 @@ def _load_implementation(read):
             this = read(1)
             if this == b'e':
                 return result
-            elif this == b'':
+            if this == b'':
                 raise BencodeValueError('unexpected end of data')
-            elif not this.isdigit():
+            if not this.isdigit():
                 raise BencodeValueError('unexpected byte 0x%.2x' % ord(this))
             size = int(this + _read_until(b':', read))
             key = read(size)
