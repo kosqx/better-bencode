@@ -3,8 +3,6 @@
 
 
 import io
-import codecs
-import os
 import sys
 
 from setuptools import setup, Extension
@@ -52,7 +50,7 @@ def run_setup(with_binary):
 
     setup(
         name='better-bencode',
-        version='0.2.1',
+        version='0.3.0',
         url='https://github.com/kosqx/better-bencode',
         license='BSD',
         author='Krzysztof Kosyl',
@@ -77,6 +75,8 @@ def run_setup(with_binary):
             'Programming Language :: Python :: 3.3',
             'Programming Language :: Python :: 3.4',
             'Programming Language :: Python :: 3.5',
+            'Programming Language :: Python :: 3.6',
+            'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: Implementation :: CPython',
             'Programming Language :: Python :: Implementation :: PyPy',
         ],
