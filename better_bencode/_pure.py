@@ -84,7 +84,7 @@ def dump(obj, fp, cast=False):
 
 
 def dumps(obj, cast=False):
-    """Serialize ``obj`` to a Bencode formatted ``str``."""
+    """Serialize ``obj`` to a Bencode formatted ``bytes``."""
 
     fp = []
     _dump_implementation(obj, fp.append, [], cast)

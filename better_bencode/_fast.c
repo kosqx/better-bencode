@@ -553,7 +553,7 @@ static PyMethodDef better_bencode_fastMethods[] = {
     {"load", load, METH_VARARGS, "Deserialize ``fp`` to a Python object."},
     {"loads", loads, METH_VARARGS, "Deserialize ``s`` to a Python object."},
     {"dump", dump, METH_VARARGS|METH_KEYWORDS, "Serialize ``obj`` as a Bencode formatted stream to ``fp``."},
-    {"dumps", dumps, METH_VARARGS|METH_KEYWORDS, "Serialize ``obj`` to a Bencode formatted ``str``."},
+    {"dumps", dumps, METH_VARARGS|METH_KEYWORDS, "Serialize ``obj`` to a Bencode formatted ``bytes``."},
     {NULL, NULL, 0, NULL}
 };
 
