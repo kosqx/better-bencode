@@ -236,7 +236,7 @@ def test_docstrings_dump(module):
 
 @pytest.mark.parametrize('module', MODULES)
 def test_docstrings_dumps(module):
-    assert module.dumps.__doc__ == "Serialize ``obj`` to a Bencode formatted ``str``."
+    assert module.dumps.__doc__ == "Serialize ``obj`` to a Bencode formatted ``bytes``."
 
 
 @pytest.mark.parametrize('module', MODULES)
