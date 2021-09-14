@@ -1,3 +1,4 @@
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
 
@@ -15,8 +16,8 @@
 struct benc_state {
     unsigned int cast : 1;
 
-    int size;
-    int offset;
+    Py_ssize_t size;
+    Py_ssize_t offset;
     char* buffer;
     PyObject* file;
 
@@ -76,9 +77,9 @@ static void benc_state_write_char(struct benc_state* bs, char c) {
 }
 
 
-static void benc_state_write_buffer(struct benc_state* bs, char* buff, int size) {
+static void benc_state_write_buffer(struct benc_state* bs, char* buff, Py_ssize_t size) {
     if (bs->file == NULL) {
-        int new_size;
+        Py_ssize_t new_size;
         for (new_size = bs->size; new_size <= (bs->offset + size); new_size *= 2);
         if (new_size > bs->size) {
             bs->buffer = realloc(bs->buffer, new_size);
@@ -101,7 +102,7 @@ static void benc_state_write_buffer(struct benc_state* bs, char* buff, int size)
 }
 
 
-static void benc_state_write_format(struct benc_state* bs, const int limit, const void *format, ...) {
+static void benc_state_write_format(struct benc_state* bs, const Py_ssize_t limit, const void *format, ...) {
     char buffer[limit + 1]; // moze by malloca()?
 
     va_list ap;
@@ -208,7 +209,7 @@ static int do_dump(struct benc_state *bs, PyObject* obj) {
 
     if (PyBytes_CheckExact(obj)) {
         char *buff = PyBytes_AS_STRING(obj);
-        int size = PyBytes_GET_SIZE(obj);
+        Py_ssize_t size = PyBytes_GET_SIZE(obj);
 
         benc_state_write_format(bs, 12, "%d:", size);
         benc_state_write_buffer(bs, buff, size);
