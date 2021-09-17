@@ -65,6 +65,8 @@ TEST_DATA = [
     (b'd3:bar4:spam3:fooi42ee', {b'bar': b'spam', b'foo': 42}),
     (b'd1:ai1e1:bi2e1:ci3ee', {b'a': 1, b'b': 2, b'c': 3}),
     (b'd1:a1:be', {b'a': b'b'}),
+    (b'3:\x00\x01\x02', bytearray([0, 1, 2])),
+    (b'3:abc', bytearray('abc', 'ascii'))
 ]
 TESTS = [
     (module,) + test
@@ -104,7 +106,7 @@ TESTS_TYPEERROR = [
     (module,  test)
     for module in MODULES
     for test in [
-        u'', (), set(), frozenset(),
+        (), set(), frozenset(),
         len, TypeError,
         True, False, None, 1.0,
     ]
